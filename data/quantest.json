@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1778010330574,
+    "opportunityId": 3,
+    "contact": "Sanjay Rao",
+    "company": "TechNova",
+    "bdr": "Ranjana Priya",
+    "ae": "Satya",
+    "status": "pending-ae-manager",
+    "message": "Lead Sanjay Rao has been Quantested and needs AE Manager decision.",
+    "createdAt": "2026-05-05T19:45:30.574Z",
+    "updatedAt": "2026-05-05T19:46:24.325Z",
+    "readByBdrManager": true,
+    "readByAeManager": false,
+    "bdrManagerDecision": "Yes",
+    "bdrManagerDecisionAt": "2026-05-05T19:46:24.325Z"
+  }
+]

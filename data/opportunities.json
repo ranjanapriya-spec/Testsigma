@@ -1,0 +1,22 @@
+{
+  "opportunities": [
+    {
+      "id": 1,
+      "contact": "John Fay",
+      "company": "BirchStreet",
+      "bdr": "Ranjana Priya",
+      "ae": "Arjun Kumar",
+      "currentStep": "24h Reminder to BDR",
+      "detailsComplete": false
+    },
+    {
+      "id": 2,
+      "contact": "Anita Mehta",
+      "company": "Global Partners",
+      "bdr": "Priya Sharma",
+      "ae": "Neha Mehta",
+      "currentStep": "48h Timer Starts for AE Decision",
+      "detailsComplete": true
+    }
+  ]
+}

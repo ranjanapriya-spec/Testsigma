@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1778006120376,
+    "to": "barnali@yopmail.com",
+    "from": "Ranjana Priya <ranjana@yopmail.com>",
+    "subject": "Reminder: Test_1 at infoedge",
+    "preview": "Ranjana Priya scheduled a reminder for Test_1 at infoedge.",
+    "body": "Hi Barnali,\n\nRanjana Priya scheduled a reminder for this opportunity.\n\nOpportunity: Test_1\nCompany: infoedge\nScheduled reminder time: 06 May 2026, 12:06 am\n\nPlease review this opportunity in the AE Flow Console.",
+    "opportunityId": 1777996165117,
+    "contact": "Test_1",
+    "company": "infoedge",
+    "scheduledFor": "2026-05-05T18:36:00.000Z",
+    "createdAt": "2026-05-05T18:35:20.376Z",
+    "read": false
+  },
+  {
+    "id": 1778005807150,
+    "to": "barnali@yopmail.com",
+    "from": "Ranjana Priya <ranjana@yopmail.com>",
+    "subject": "Reminder: Pinku at Phitku",
+    "preview": "Ranjana Priya scheduled a reminder for Pinku at Phitku.",
+    "body": "Hi Barnali,\n\nRanjana Priya scheduled a reminder for this opportunity.\n\nOpportunity: Pinku\nCompany: Phitku\nScheduled reminder time: 06 May 2026, 12:01 am\n\nPlease review this opportunity in the AE Flow Console.",
+    "opportunityId": 1778003345007,
+    "contact": "Pinku",
+    "company": "Phitku",
+    "scheduledFor": "2026-05-05T18:31:00.000Z",
+    "createdAt": "2026-05-05T18:30:07.150Z",
+    "read": true
+  },
+  {
+    "id": 1778004007503,
+    "to": "barnali@yopmail.com",
+    "from": "Ranjana Priya <ranjana@yopmail.com>",
+    "subject": "Reminder: Pinku at Phitku",
+    "preview": "Ranjana Priya scheduled a reminder for Pinku at Phitku.",
+    "body": "Hi Barnali,\n\nRanjana Priya scheduled a reminder for this opportunity.\n\nOpportunity: Pinku\nCompany: Phitku\nScheduled reminder time: 05 May 2026, 11:31 pm\n\nPlease review this opportunity in the AE Flow Console.",
+    "opportunityId": 1778003345007,
+    "contact": "Pinku",
+    "company": "Phitku",
+    "scheduledFor": "2026-05-05T18:01:00.000Z",
+    "createdAt": "2026-05-05T18:00:07.503Z",
+    "read": true
+  },
+  {
+    "id": 1777997122576,
+    "to": "barnali@yopmail.com",
+    "from": "Ranjana Priya <ranjana@yopmail.com>",
+    "subject": "Reminder: Test_1 at infoedge",
+    "preview": "Ranjana Priya scheduled a reminder for Test_1 at infoedge.",
+    "body": "Hi Barnali,\n\nRanjana Priya scheduled a reminder for this opportunity.\n\nOpportunity: Test_1\nCompany: infoedge\nScheduled reminder time: 05 May 2026, 9:36 pm\n\nPlease review this opportunity in the AE Flow Console.",
+    "opportunityId": 1777996165117,
+    "contact": "Test_1",
+    "company": "infoedge",
+    "scheduledFor": "2026-05-05T16:06:00.000Z",
+    "createdAt": "2026-05-05T16:05:22.576Z",
+    "read": true
+  }
+]

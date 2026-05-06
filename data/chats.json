@@ -1,0 +1,68 @@
+[
+  {
+    "id": 1778008953386,
+    "chatType": "bdr-manager-bdr",
+    "opportunityId": 1778003330925,
+    "contact": "Google",
+    "company": "Boogle",
+    "bdr": "Ranjana Priya",
+    "bdrManager": "mithun",
+    "createdAt": "2026-05-05T19:22:33.386Z",
+    "updatedAt": "2026-05-05T19:22:33.391Z",
+    "messages": [
+      {
+        "id": 1778008953391,
+        "senderRole": "BDR Manager",
+        "senderName": "mithun",
+        "senderEmail": "mithun@yopmail.com",
+        "text": "What is the status of this account",
+        "createdAt": "2026-05-05T19:22:33.391Z",
+        "readByBdr": true,
+        "readByManager": true
+      }
+    ]
+  },
+  {
+    "id": 1778008501450,
+    "opportunityId": 1778000918197,
+    "contact": "TestX",
+    "company": "Tesla",
+    "ae": "Barnali",
+    "aeManager": "piyush",
+    "createdAt": "2026-05-05T19:15:01.450Z",
+    "updatedAt": "2026-05-05T19:17:32.419Z",
+    "messages": [
+      {
+        "id": 1778008501456,
+        "senderRole": "AE Manager",
+        "senderName": "piyush",
+        "senderEmail": "piyush@yopmail.com",
+        "text": "Why still pending?",
+        "createdAt": "2026-05-05T19:15:01.456Z",
+        "readByAe": true,
+        "readByManager": true,
+        "seenToastByAe": true
+      },
+      {
+        "id": 1778008553835,
+        "senderRole": "AE",
+        "senderName": "Barnali",
+        "senderEmail": "barnali@yopmail.com",
+        "text": "Let me check",
+        "createdAt": "2026-05-05T19:15:53.835Z",
+        "readByAe": true,
+        "readByManager": true
+      },
+      {
+        "id": 1778008652419,
+        "senderRole": "AE Manager",
+        "senderName": "piyush",
+        "senderEmail": "piyush@yopmail.com",
+        "text": "okay",
+        "createdAt": "2026-05-05T19:17:32.419Z",
+        "readByAe": false,
+        "readByManager": true
+      }
+    ]
+  }
+]
