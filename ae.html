@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AE Workspace</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6fb; color: #171a22; }
+    .app { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+    .sidebar { background: #161a22; color: #fff; padding: 22px 18px; display: flex; flex-direction: column; gap: 20px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 850; }
+    .logo { width: 40px; height: 40px; border-radius: 8px; background: #4f67ff; display: grid; place-items: center; font-size: 13px; }
+    .nav { display: grid; gap: 6px; }
+    .nav button { height: 38px; border: 0; border-radius: 8px; background: transparent; color: rgba(255,255,255,.64); text-align: left; padding: 0 12px; font: inherit; cursor: pointer; }
+    .nav button.active, .nav button:hover { background: rgba(79,103,255,.22); color: #fff; }
+    .side-note { margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.08); color: rgba(255,255,255,.54); font-size: 12px; line-height: 1.5; }
+    main { padding: 28px 32px 34px; min-width: 0; }
+    .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px; }
+    .top-actions { display: flex; align-items: center; gap: 10px; position: relative; }
+    h1 { font-size: 25px; line-height: 1.12; }
+    .sub { margin-top: 6px; color: #687183; font-size: 13px; line-height: 1.45; }
+    .btn { height: 38px; border: 0; border-radius: 8px; padding: 0 14px; font-size: 13px; font-weight: 850; cursor: pointer; background: #eef1f7; color: #333b49; }
+    .bell { width: 38px; height: 38px; border: 0; border-radius: 8px; background: #fff; color: #171a22; cursor: pointer; border: 1px solid #e4e9f2; position: relative; font-size: 17px; }
+    .gmail-btn { width: 38px; height: 38px; border: 1px solid #e4e9f2; border-radius: 8px; background: #fff; cursor: pointer; position: relative; display: grid; place-items: center; font-size: 16px; font-weight: 900; color: #ea4335; }
+    .chat-btn { width: 38px; height: 38px; border: 1px solid #e4e9f2; border-radius: 8px; background: #fff; cursor: pointer; position: relative; font-size: 17px; }
+    .badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; border-radius: 999px; background: #ef4444; color: #fff; font-size: 10px; font-weight: 900; display: none; align-items: center; justify-content: center; padding: 0 5px; }
+    .badge.show { display: flex; }
+    .notif-menu { position: absolute; top: 46px; right: 72px; width: min(360px, 92vw); background: #fff; border: 1px solid #e4e9f2; border-radius: 8px; box-shadow: 0 18px 50px rgba(18,24,38,.16); display: none; z-index: 10; overflow: hidden; }
+    .notif-menu.open { display: block; }
+    .notif-head { padding: 12px 14px; border-bottom: 1px solid #eef1f6; font-size: 13px; font-weight: 900; }
+    .notif-list { max-height: 320px; overflow: auto; }
+    .notif-item { padding: 12px 14px; border-bottom: 1px solid #f0f3f8; display: grid; gap: 4px; }
+    .notif-item.unread { background: #f5f7ff; }
+    .notif-title { font-size: 13px; font-weight: 900; }
+    .notif-copy { font-size: 12px; color: #687183; line-height: 1.35; }
+    .notif-empty { padding: 24px 14px; color: #687183; font-size: 13px; text-align: center; }
+    .notif-actions { display: flex; gap: 8px; margin-top: 4px; }
+    .notif-actions button { height: 28px; border: 0; border-radius: 7px; padding: 0 10px; font-size: 12px; font-weight: 850; cursor: pointer; }
+    .notif-actions .yes { background: #dcfce7; color: #15803d; }
+    .notif-actions .no { background: #fee2e2; color: #b91c1c; }
+    .toast-stack { position: fixed; right: 18px; bottom: 18px; width: min(360px, calc(100vw - 36px)); display: grid; gap: 10px; z-index: 30; }
+    .toast { border: 1px solid #dbe3f0; border-left: 4px solid #4f67ff; border-radius: 8px; background: #fff; padding: 12px 14px; box-shadow: 0 18px 48px rgba(18,24,38,.18); display: grid; gap: 4px; }
+    .toast-title { font-size: 13px; font-weight: 900; }
+    .toast-copy { color: #687183; font-size: 12px; line-height: 1.4; }
+    .layout { display: grid; grid-template-columns: 1fr; gap: 18px; align-items: start; }
+    .panel { background: #fff; border: 1px solid #e4e9f2; border-radius: 8px; overflow: hidden; }
+    .panel.hidden { display: none; }
+    .panel-head { min-height: 54px; border-bottom: 1px solid #eef1f6; padding: 14px 16px; }
+    .panel-title { font-size: 14px; font-weight: 850; }
+    .panel-note { color: #747d8d; font-size: 12px; margin-top: 2px; }
+    .dashboard { padding: 16px; display: grid; gap: 18px; }
+    .dash-cards { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 12px; }
+    .dash-card { border: 1px solid #edf0f6; border-radius: 8px; padding: 14px; background: #fbfcff; }
+    .dash-card label { display: block; color: #747d8d; font-size: 12px; font-weight: 850; margin-bottom: 8px; }
+    .dash-card strong { font-size: 26px; line-height: 1; }
+    .bar-chart { border: 1px solid #edf0f6; border-radius: 8px; padding: 14px; display: grid; gap: 12px; }
+    .bar-row { display: grid; grid-template-columns: 160px 1fr 44px; gap: 12px; align-items: center; }
+    .bar-label { font-size: 13px; font-weight: 850; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar-track { height: 30px; border-radius: 8px; background: #eef1f7; overflow: hidden; }
+    .bar-fill { height: 100%; min-width: 34px; border-radius: 8px; background: linear-gradient(90deg, #4f67ff, #16a34a); }
+    .bar-count { color: #333b49; font-size: 13px; font-weight: 850; text-align: right; }
+    .records { padding: 12px; display: grid; gap: 10px; }
+    .record { border: 1px solid #edf0f6; border-radius: 8px; padding: 12px; display: grid; gap: 8px; cursor: pointer; }
+    .record:hover { border-color: #4f67ff; background: #fbfcff; }
+    .record-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .record-name { font-weight: 850; font-size: 13px; }
+    .muted { color: #747d8d; font-size: 12px; line-height: 1.35; }
+    .pill { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 850; white-space: nowrap; }
+    .pill-blue { background: #eef2ff; color: #4f46e5; }
+    .pill-green { background: #dcfce7; color: #15803d; }
+    .pill-orange { background: #fff7ed; color: #c2410c; }
+    .pill-red { background: #fee2e2; color: #b91c1c; }
+    .empty { padding: 38px 18px; color: #687183; text-align: center; font-size: 13px; }
+    .modal { position: fixed; inset: 0; background: rgba(12,16,24,.48); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+    .modal.open { display: flex; }
+    .dialog { width: min(640px, 96vw); background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,.24); }
+    .dialog-head { min-height: 54px; padding: 14px 18px; border-bottom: 1px solid #eef0f5; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+    .dialog-title { font-size: 16px; font-weight: 900; }
+    .dialog-body { padding: 18px; display: grid; gap: 14px; }
+    .field label { display: block; font-size: 12px; color: #5f6675; font-weight: 850; margin-bottom: 6px; }
+    select, textarea { width: 100%; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; color: #171a22; font: inherit; outline: none; }
+    select { height: 40px; padding: 0 12px; }
+    textarea { min-height: 110px; padding: 10px 12px; resize: vertical; line-height: 1.5; }
+    select:focus, textarea:focus { border-color: #4f67ff; box-shadow: 0 0 0 3px rgba(79,103,255,.12); }
+    .reason-field { display: none; }
+    .reason-field.show { display: block; }
+    .mom-box { border: 1px solid #e4e9f2; border-radius: 8px; background: #fbfcff; padding: 12px; display: grid; gap: 8px; }
+    .mom-text { white-space: pre-line; color: #303744; font-size: 13px; line-height: 1.5; max-height: 260px; overflow: auto; }
+    .chat-dialog { width: min(760px, 96vw); max-height: min(760px, 92vh); display: grid; grid-template-rows: auto 1fr auto; }
+    .chat-dialog .dialog-body { overflow: auto; }
+    .chat-shell { border: 1px solid #edf0f6; border-radius: 8px; overflow: hidden; }
+    .chat-log { min-height: 190px; max-height: 300px; overflow: auto; padding: 12px; display: grid; gap: 10px; background: #fbfcff; }
+    .message { max-width: 82%; border-radius: 8px; padding: 9px 11px; background: #eef1f7; display: grid; gap: 4px; }
+    .message.mine { margin-left: auto; background: #eef2ff; }
+    .message strong { font-size: 12px; }
+    .message p { font-size: 13px; line-height: 1.4; white-space: pre-line; }
+    .dialog-actions { padding: 0 18px 18px; display: flex; justify-content: flex-end; gap: 10px; }
+    @media (max-width: 1120px) {
+      .app { grid-template-columns: 1fr; }
+      .dash-cards { grid-template-columns: 1fr; }
+      main { padding: 22px 16px; }
+    }
+    @media (max-width: 760px) {
+      .top { flex-direction: column; }
+      .bar-row { grid-template-columns: 1fr; gap: 6px; }
+      .bar-count { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="logo">AE</div><span>Flow Console</span></div>
+      <div class="nav">
+        <button id="navDashboard" onclick="showSection('dashboardPanel')">Dashboard</button>
+        <button class="active" id="navOpportunities" onclick="showSection('recordsPanel')">Demo Done</button>
+        <button id="navWon" onclick="showSection('wonPanel')">Qualified Opportunities</button>
+        <button id="navLost" onclick="showSection('lostPanel')">Lost Opportunities</button>
+      </div>
+      <div class="side-note">Review mapped opportunities, respond Yes or No, and track won or lost opportunities in one AE console.</div>
+    </aside>
+
+    <main>
+      <div class="top">
+        <div>
+          <h1>AE Flow Console</h1>
+          <p class="sub" id="subtitle">Mapped opportunities for this AE.</p>
+        </div>
+        <div class="top-actions">
+          <button class="bell" onclick="toggleNotifications()" title="Notifications">🔔<span class="badge" id="bellCount">0</span></button>
+          <button class="chat-btn" onclick="openChatModal()" title="Lead chat">💬<span class="badge" id="chatCount">0</span></button>
+          <button class="gmail-btn" onclick="openDemoGmail()" title="Demo Gmail">M<span class="badge" id="mailCount">0</span></button>
+          <div class="notif-menu" id="notifMenu">
+            <div class="notif-head">Notifications</div>
+            <div class="notif-list" id="notifList"></div>
+          </div>
+          <button class="btn" onclick="logout()">Logout</button>
+        </div>
+      </div>
+
+      <div class="layout">
+        <section class="panel hidden" id="dashboardPanel">
+          <div class="panel-head">
+            <div class="panel-title">Dashboard</div>
+            <div class="panel-note">Lead volume for mapped AE opportunities.</div>
+          </div>
+          <div class="dashboard">
+            <div class="dash-cards">
+              <div class="dash-card"><label>Total Leads</label><strong id="totalLeads">0</strong></div>
+              <div class="dash-card"><label>Active Leads</label><strong id="activeLeads">0</strong></div>
+              <div class="dash-card"><label>Qualified Leads</label><strong id="wonLeads">0</strong></div>
+              <div class="dash-card"><label>Lost Leads</label><strong id="lostLeads">0</strong></div>
+            </div>
+            <div class="bar-chart" id="aeLeadChart"></div>
+          </div>
+        </section>
+
+        <section class="panel" id="recordsPanel">
+          <div class="panel-head">
+            <div class="panel-title">Demo Done</div>
+            <div class="panel-note">Only active demo-done opportunities mapped to this AE are shown.</div>
+          </div>
+          <div class="records" id="records"></div>
+        </section>
+
+        <section class="panel hidden" id="wonPanel">
+          <div class="panel-head">
+            <div class="panel-title">Qualified Opportunities</div>
+            <div class="panel-note">Opportunities marked Yes appear here.</div>
+          </div>
+          <div class="records" id="wonRecords"></div>
+        </section>
+
+        <section class="panel hidden" id="lostPanel">
+          <div class="panel-head">
+            <div class="panel-title">Lost Opportunities</div>
+            <div class="panel-note">Opportunities marked No appear here.</div>
+          </div>
+          <div class="records" id="lostRecords"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast-stack" id="toastStack"></div>
+
+  <div class="modal" id="chatModal">
+    <form class="dialog chat-dialog" id="chatForm">
+      <div class="dialog-head">
+        <div>
+          <div class="dialog-title">AE Manager Chat</div>
+          <div class="muted">Lead-specific chat with the AE Manager.</div>
+        </div>
+        <button class="btn" type="button" onclick="closeChatModal()">Close</button>
+      </div>
+      <div class="dialog-body">
+        <div class="field">
+          <label for="aeChatLeadSelect">Lead</label>
+          <select id="aeChatLeadSelect" onchange="renderAeChatThread()"></select>
+        </div>
+        <div class="chat-shell">
+          <div class="chat-log" id="aeChatLog"></div>
+        </div>
+        <div class="field">
+          <label for="aeChatMessage">Reply</label>
+          <textarea id="aeChatMessage" placeholder="Type reply to AE Manager..."></textarea>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn" type="button" onclick="closeChatModal()">Cancel</button>
+        <button class="btn" type="submit">Send Reply</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal" id="decisionModal">
+    <form class="dialog" id="decisionForm">
+      <div class="dialog-head">
+        <div>
+          <div class="dialog-title" id="decisionTitle">Opportunity Review</div>
+          <div class="muted" id="decisionSubtitle"></div>
+        </div>
+        <button class="btn" type="button" onclick="closeDecisionModal()">Close</button>
+      </div>
+      <div class="dialog-body">
+        <div class="field">
+          <label for="opportunityDecision">Opportunity</label>
+          <select id="opportunityDecision" onchange="toggleReasonField()">
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+        <div class="field reason-field" id="reasonField">
+          <label for="rejectionReason">Reason</label>
+          <textarea id="rejectionReason" placeholder="Mention why this is not an opportunity..."></textarea>
+        </div>
+        <div id="decisionMom"></div>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn" type="button" onclick="closeDecisionModal()">Cancel</button>
+        <button class="btn" type="submit">Save Decision</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const auth = JSON.parse(sessionStorage.getItem("bdr_auth") || localStorage.getItem("bdr_auth") || "null");
+    if (!auth || auth.role !== "AE") window.location.href = "index.html";
+
+    const storeKey = "bdr_flow_records_v1";
+    const notificationKey = "bdr_ae_notifications_v1";
+    const chatKey = "bdr_ae_manager_chats_v1";
+    const aeChatType = "ae-manager-ae";
+    const seed = [
+      {
+        id: 1,
+        contact: "John Fay",
+        company: "BirchStreet",
+        bdr: "Ranjana Priya",
+        ae: "Barnali",
+        step: "reminder24",
+        detailsComplete: false,
+        aeDecision: "Pending",
+        notes: "Need budget owner and implementation timeline. Pain point is missed follow-ups after demos.",
+        log: [
+          ["Gong recording captured", "Intro call recording synced."],
+          ["AI output generated", "SDR notes, missing details, questions, and readiness score created."],
+          ["CRM + Slack updated", "Output pushed to CRM and Slack channel."]
+        ]
+      },
+      {
+        id: 2,
+        contact: "Anita Mehta",
+        company: "Global Partners",
+        bdr: "Priya Sharma",
+        ae: "Barnali",
+        step: "timer48",
+        detailsComplete: true,
+        aeDecision: "Pending",
+        notes: "Pilot approved. Demo completed. AE decision due within 48 hours.",
+        log: [
+          ["Demo scheduled via RevenueHero", "AE calendar invite sent."],
+          ["Demo completed", "24h reminder sent to BDR and AE."]
+        ]
+      },
+      {
+        id: 3,
+        contact: "Sanjay Rao",
+        company: "TechNova",
+        bdr: "Ranjana Priya",
+        ae: "Satya",
+        step: "contest",
+        detailsComplete: true,
+        aeDecision: "Reject",
+        notes: "AE rejected for budget mismatch. BDR may contest using board meeting timeline context.",
+        log: [
+          ["AE rejection reason captured", "Pricing gap and unclear authority."],
+          ["BDR + managers notified", "Contest option opened."]
+        ]
+      }
+    ];
+    const aeNameByEmail = {
+      "barnali@yopmail.com": "Barnali"
+    };
+    const currentAe = aeNameByEmail[(auth && auth.email || "").toLowerCase()] || "Barnali";
+    let activeOpportunityId = null;
+
+    function load() {
+      if (!localStorage.getItem(storeKey)) localStorage.setItem(storeKey, JSON.stringify(seed));
+      try {
+        const items = JSON.parse(localStorage.getItem(storeKey) || "[]");
+        let changed = false;
+        items.forEach(item => {
+          if (item.ae === "Arjun Kumar" || item.ae === "Neha Mehta") {
+            item.ae = "Barnali";
+            changed = true;
+          }
+        });
+        if (changed) localStorage.setItem(storeKey, JSON.stringify(items));
+        return items;
+      } catch (error) { return []; }
+    }
+    async function loadNotifications() {
+      try {
+        const response = await fetch("/api/notifications", { cache: "no-store" });
+        if (response.ok) return await response.json();
+      } catch (error) {}
+      try { return JSON.parse(localStorage.getItem(notificationKey) || "[]"); } catch (error) { return []; }
+    }
+    async function saveNotifications(items) {
+      localStorage.setItem(notificationKey, JSON.stringify(items));
+      try {
+        await fetch("/api/notifications", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(items)
+        });
+      } catch (error) {}
+    }
+    async function loadMailbox() {
+      try {
+        const response = await fetch("/api/mailbox", { cache: "no-store" });
+        if (response.ok) return await response.json();
+      } catch (error) {}
+      try { return JSON.parse(localStorage.getItem("bdr_demo_mailbox_v1") || "[]"); } catch (error) { return []; }
+    }
+    async function loadChats() {
+      try {
+        const response = await fetch("/api/chats", { cache: "no-store" });
+        if (response.ok) return await response.json();
+      } catch (error) {}
+      try { return JSON.parse(localStorage.getItem(chatKey) || "[]"); } catch (error) { return []; }
+    }
+    async function saveChats(items) {
+      localStorage.setItem(chatKey, JSON.stringify(items));
+      try {
+        await fetch("/api/chats", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(items)
+        });
+      } catch (error) {}
+    }
+    function esc(value) { return String(value || "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c])); }
+    function label(step) {
+      const labels = {
+        intro: "Intro Call Completed", gong: "Gong Recording Captured", ai: "AI Processing", push: "CRM + Slack Updated",
+        reminder24: "24h BDR Reminder", details: "Detail Check", reconnect: "Reconnect with Opportunity",
+        fill: "Fill Missing Details", demoStage: "Move to Demo Stage", schedule: "Demo Scheduled",
+        aeDemo: "AE Conducts Demo", demoDone: "Demo Completed", followup24: "BDR + AE Follow-up",
+        timer48: "48h AE Decision Timer", aeDecision: "AE Decision", accepted: "Opportunity Accepted",
+        notifyAccept: "Acceptance Notifications", sales: "Sales Cycle", rejected: "AE Rejected",
+        notifyReject: "Rejection Notifications", contest: "Contest Decision", close: "Close / Nurture",
+        raise: "Contest Raised", manager: "Manager Review", contestClose: "Contest Closed",
+        reassign: "Reassigned to AE", newAe: "New AE Continues", moreInfo: "More Info Requested"
+      };
+      return labels[step] || step;
+    }
+    function status(record) {
+      if (["accepted", "notifyAccept", "sales", "newAe"].includes(record.step)) return ["Qualified", "pill-green"];
+      if (["close", "contestClose"].includes(record.step)) return ["Closed", "pill-red"];
+      if (["rejected", "notifyReject", "contest", "raise", "manager", "moreInfo"].includes(record.step)) return ["Review", "pill-orange"];
+      return ["Active", "pill-blue"];
+    }
+    function isOpportunityYes(item) {
+      const decision = String(item.aeDecision || "").toLowerCase();
+      return decision === "accept" || decision === "accepted" || decision === "yes";
+    }
+    function isWonOpportunity(item) {
+      return isOpportunityYes(item) || ["accepted", "notifyAccept", "sales", "newAe"].includes(item.step);
+    }
+    function isOpportunityNo(item) {
+      const decision = String(item.aeDecision || "").toLowerCase();
+      return decision === "reject" || decision === "rejected" || decision === "no" || Boolean(item.aeRejectionReason);
+    }
+    function isLostOpportunity(item) {
+      return isOpportunityNo(item) || ["rejected", "notifyReject", "contest", "raise", "manager", "moreInfo", "close", "contestClose"].includes(item.step);
+    }
+    function isAeVisibleOpportunity(item) {
+      return item.stage !== "s1" && item.stage !== "s2";
+    }
+    function isReminderDue(item) {
+      return !item.scheduledFor || new Date(item.scheduledFor).getTime() <= Date.now();
+    }
+    function isMailDue(item) {
+      return !item.scheduledFor || new Date(item.scheduledFor).getTime() <= Date.now();
+    }
+    function showReminderToast(item) {
+      const stack = document.getElementById("toastStack");
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.innerHTML = `<div class="toast-title">Reminder due: ${esc(item.contact)}</div>
+        <div class="toast-copy">${esc(item.company)} · ${esc(item.bdr || "BDR")}</div>
+        <div class="toast-copy">${esc(item.message || "Reminder is now due.")}</div>`;
+      stack.prepend(toast);
+      setTimeout(() => toast.remove(), 15000);
+    }
+    function showChatToast(chat, message) {
+      const stack = document.getElementById("toastStack");
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.innerHTML = `<div class="toast-title">Chat from AE Manager: ${esc(chat.contact)}</div>
+        <div class="toast-copy">${esc(chat.company)} · ${esc(message.senderName || "AE Manager")}</div>
+        <div class="toast-copy">${esc(message.text)}</div>`;
+      stack.prepend(toast);
+      setTimeout(() => toast.remove(), 15000);
+    }
+    async function releaseDueReminders() {
+      const notifications = await loadNotifications();
+      const visibleIds = new Set(load()
+        .filter(item => String(item.ae || "").toLowerCase() === currentAe.toLowerCase() && isAeVisibleOpportunity(item))
+        .map(item => Number(item.id)));
+      let changed = false;
+      let released = false;
+      notifications.forEach(item => {
+        const belongsToAe = String(item.ae || "").toLowerCase() === currentAe.toLowerCase() && visibleIds.has(Number(item.opportunityId));
+        if (belongsToAe && isReminderDue(item) && !item.triggeredAt) {
+          item.triggeredAt = new Date().toISOString();
+          changed = true;
+          released = true;
+          showReminderToast(item);
+        }
+      });
+      if (changed) await saveNotifications(notifications);
+      if (released) document.getElementById("notifMenu").classList.add("open");
+    }
+    function renderOpportunityCards(targetId, items, notifications, emptyText, mode) {
+      const target = document.getElementById(targetId);
+      if (!items.length) {
+        target.innerHTML = '<div class="empty">' + esc(emptyText) + '</div>';
+        return;
+      }
+      target.innerHTML = items.map(item => {
+        const [text, cls] = status(item);
+        const reminderCount = notifications.filter(notification => Number(notification.opportunityId) === Number(item.id)).length;
+        return `<div class="record" onclick="openDecisionModal(${item.id})">
+          <div class="record-top">
+            <div>
+              <div class="record-name">${esc(item.contact)}</div>
+              <div class="muted">${esc(item.company)}</div>
+              <div class="muted">Number of reminders: ${reminderCount}</div>
+            </div>
+            <span class="pill ${cls}">${esc(text)}</span>
+          </div>
+          <div class="muted">Current: ${esc(label(item.step))}</div>
+          <div class="muted">BDR: ${esc(item.bdr)} · AE mapped: ${esc(item.ae)}</div>
+          ${item.mom ? `<div><span class="pill pill-blue">MoM available</span></div>` : ""}
+          ${mode === "won" ? `<div><span class="pill pill-green">Opportunity YES</span></div>` : ""}
+          ${mode === "lost" ? `<div><span class="pill pill-red">Opportunity NO</span></div>` : ""}
+          ${item.aeDecision && item.aeDecision !== "Pending" ? `<div class="muted">AE decision: ${esc(item.aeDecision)}${item.aeRejectionReason ? " · Reason: " + esc(item.aeRejectionReason) : ""}</div>` : ""}
+        </div>`;
+      }).join("");
+    }
+    function messagesForCurrentAe(chats) {
+      const visibleIds = new Set(load()
+        .filter(item => String(item.ae || "").toLowerCase() === currentAe.toLowerCase() && isAeVisibleOpportunity(item))
+        .map(item => Number(item.id)));
+      return chats
+        .filter(chat => (chat.chatType || aeChatType) === aeChatType && String(chat.ae || "").toLowerCase() === currentAe.toLowerCase() && visibleIds.has(Number(chat.opportunityId)))
+        .flatMap(chat => (chat.messages || []).map(message => ({ chat, message })));
+    }
+    function unreadChatCount(chats) {
+      return messagesForCurrentAe(chats).filter(item => item.message.senderRole === "AE Manager" && !item.message.readByAe).length;
+    }
+    async function releaseChatNotifications() {
+      const chats = await loadChats();
+      let released = false;
+      messagesForCurrentAe(chats).forEach(item => {
+        if (item.message.senderRole === "AE Manager" && !item.message.seenToastByAe) {
+          item.message.seenToastByAe = true;
+          released = true;
+          showChatToast(item.chat, item.message);
+        }
+      });
+      if (released) await saveChats(chats);
+    }
+    function renderDashboard(mapped) {
+      const wonCount = mapped.filter(isWonOpportunity).length;
+      const lostCount = mapped.filter(isLostOpportunity).length;
+      document.getElementById("totalLeads").textContent = mapped.length;
+      document.getElementById("activeLeads").textContent = mapped.length - wonCount - lostCount;
+      document.getElementById("wonLeads").textContent = wonCount;
+      document.getElementById("lostLeads").textContent = lostCount;
+
+      const grouped = mapped.reduce((acc, item) => {
+        const owner = item.bdr || "Unassigned";
+        acc[owner] = (acc[owner] || 0) + 1;
+        return acc;
+      }, {});
+      const rows = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
+      const max = Math.max(...rows.map(row => row[1]), 1);
+      document.getElementById("aeLeadChart").innerHTML = rows.length ? rows.map(([owner, count]) => {
+        const width = Math.max((count / max) * 100, 8);
+        return `<div class="bar-row">
+          <div class="bar-label" title="${esc(owner)}">${esc(owner)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
+          <div class="bar-count">${count}</div>
+        </div>`;
+      }).join("") : `<div class="muted">No mapped leads available yet.</div>`;
+    }
+    async function render() {
+      document.getElementById("subtitle").textContent = "Signed in as " + currentAe + ". Showing opportunities mapped to " + currentAe + ".";
+      await releaseDueReminders();
+      const mapped = load().filter(item => String(item.ae || "").toLowerCase() === currentAe.toLowerCase() && isAeVisibleOpportunity(item));
+      const visibleIds = new Set(mapped.map(item => Number(item.id)));
+      const allAeNotifications = (await loadNotifications()).filter(item => String(item.ae || "").toLowerCase() === currentAe.toLowerCase() && visibleIds.has(Number(item.opportunityId)));
+      const bellNotifications = allAeNotifications.filter(isReminderDue);
+      const unread = bellNotifications.filter(item => !item.read).length;
+      const bellCount = document.getElementById("bellCount");
+      bellCount.textContent = unread;
+      bellCount.classList.toggle("show", unread > 0);
+      const dueMail = (await loadMailbox()).filter(item => String(item.to || "").toLowerCase() === (auth.email || "").toLowerCase() && isMailDue(item));
+      const unreadMail = dueMail.filter(item => !item.read).length;
+      const mailCount = document.getElementById("mailCount");
+      mailCount.textContent = unreadMail;
+      mailCount.classList.toggle("show", unreadMail > 0);
+      await releaseChatNotifications();
+      const chatUnread = unreadChatCount(await loadChats());
+      const chatCount = document.getElementById("chatCount");
+      chatCount.textContent = chatUnread;
+      chatCount.classList.toggle("show", chatUnread > 0);
+      renderNotifications(bellNotifications);
+      renderDashboard(mapped);
+      renderOpportunityCards("records", mapped.filter(item => !isWonOpportunity(item) && !isLostOpportunity(item)), bellNotifications, "No active opportunities are mapped to " + currentAe + " yet.", "active");
+      renderOpportunityCards("wonRecords", mapped.filter(isWonOpportunity), bellNotifications, "No qualified opportunities yet.", "won");
+      renderOpportunityCards("lostRecords", mapped.filter(isLostOpportunity), bellNotifications, "No lost opportunities yet.", "lost");
+    }
+    function renderNotifications(notifications) {
+      const list = document.getElementById("notifList");
+      if (!notifications.length) {
+        list.innerHTML = '<div class="notif-empty">No reminders yet.</div>';
+        return;
+      }
+      list.innerHTML = notifications.map(item => {
+        const when = item.createdAt ? new Date(item.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "numeric", minute: "2-digit" }) : "";
+        const scheduled = item.scheduledFor ? new Date(item.scheduledFor).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" }) : "";
+        return `<div class="notif-item ${item.read ? "" : "unread"}">
+          <div class="notif-title">${esc(item.contact)} · ${esc(item.company)}</div>
+          <div class="notif-copy">${esc(item.message)}</div>
+          ${item.reminderTypeLabel ? `<div class="notif-copy">Type: ${esc(item.reminderTypeLabel)}</div>` : ""}
+          ${item.emailTo ? `<div class="notif-copy">Email: ${esc(item.emailTo)}</div>` : ""}
+          ${scheduled ? `<div class="notif-copy">Reminder date: ${esc(scheduled)}</div>` : ""}
+          ${item.reminderType === "next-step" ? renderReminderResponse(item) : ""}
+          <div class="notif-copy">${esc(when)}</div>
+        </div>`;
+      }).join("");
+    }
+    function renderReminderResponse(item) {
+      if (item.nextStepResponse) return `<div class="notif-copy">AE response: ${esc(item.nextStepResponse)}</div>`;
+      return `<div class="notif-actions">
+        <button class="yes" onclick="respondToReminder(${item.id}, 'Yes', event)">Yes</button>
+        <button class="no" onclick="respondToReminder(${item.id}, 'No', event)">No</button>
+      </div>`;
+    }
+    async function respondToReminder(id, response, event) {
+      event.stopPropagation();
+      const notifications = await loadNotifications();
+      const item = notifications.find(notification => Number(notification.id) === Number(id));
+      if (!item) return;
+      item.nextStepResponse = response;
+      item.respondedAt = new Date().toISOString();
+      item.read = true;
+      await saveNotifications(notifications);
+      const records = load();
+      const record = records.find(record => Number(record.id) === Number(item.opportunityId));
+      if (record) {
+        record.log = record.log || [];
+        record.log.unshift(["AE responded to next-step reminder", "Response: " + response]);
+        localStorage.setItem(storeKey, JSON.stringify(records));
+      }
+      await render();
+      document.getElementById("notifMenu").classList.add("open");
+    }
+    async function toggleNotifications() {
+      const menu = document.getElementById("notifMenu");
+      const open = !menu.classList.contains("open");
+      menu.classList.toggle("open", open);
+      if (open) {
+        const notifications = await loadNotifications();
+        let changed = false;
+        notifications.forEach(item => {
+          if (String(item.ae || "").toLowerCase() === currentAe.toLowerCase() && isReminderDue(item) && !item.read) {
+            item.read = true;
+            changed = true;
+          }
+        });
+        if (changed) await saveNotifications(notifications);
+        await render();
+        document.getElementById("notifMenu").classList.add("open");
+      }
+    }
+    function logout() {
+      sessionStorage.removeItem("bdr_auth");
+      localStorage.removeItem("bdr_auth");
+      window.location.href = "index.html";
+    }
+    function openDemoGmail() {
+      window.open("gmail.html", "_blank");
+    }
+    function chatThreadsForAe(chats) {
+      const visibleIds = new Set(load()
+        .filter(item => String(item.ae || "").toLowerCase() === currentAe.toLowerCase() && isAeVisibleOpportunity(item))
+        .map(item => Number(item.id)));
+      return chats
+        .filter(chat => (chat.chatType || aeChatType) === aeChatType && String(chat.ae || "").toLowerCase() === currentAe.toLowerCase() && visibleIds.has(Number(chat.opportunityId)))
+        .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+    }
+    function renderMessages(targetId, chat) {
+      const messages = chat && chat.messages ? chat.messages : [];
+      document.getElementById(targetId).innerHTML = messages.length ? messages.map(message => {
+        const mine = message.senderRole === "AE";
+        const when = message.createdAt ? new Date(message.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "numeric", minute: "2-digit" }) : "";
+        return `<div class="message ${mine ? "mine" : ""}">
+          <strong>${esc(message.senderName)} · ${esc(when)}</strong>
+          <p>${esc(message.text)}</p>
+        </div>`;
+      }).join("") : `<div class="empty">No chat yet for this lead.</div>`;
+    }
+    async function renderAeChatLeadOptions() {
+      const chats = await loadChats();
+      const threads = chatThreadsForAe(chats);
+      const select = document.getElementById("aeChatLeadSelect");
+      select.innerHTML = threads.length ? threads.map(chat => `<option value="${chat.opportunityId}">${esc(chat.contact)} · ${esc(chat.company)}</option>`).join("") : `<option value="">No chats yet</option>`;
+      await renderAeChatThread();
+    }
+    async function renderAeChatThread() {
+      const id = Number(document.getElementById("aeChatLeadSelect").value);
+      const chats = await loadChats();
+      const chat = chats.find(item => (item.chatType || aeChatType) === aeChatType && Number(item.opportunityId) === id && String(item.ae || "").toLowerCase() === currentAe.toLowerCase());
+      if (!chat) {
+        document.getElementById("aeChatLog").innerHTML = `<div class="empty">No chat selected.</div>`;
+        return;
+      }
+      let changed = false;
+      (chat.messages || []).forEach(message => {
+        if (message.senderRole === "AE Manager" && !message.readByAe) {
+          message.readByAe = true;
+          changed = true;
+        }
+      });
+      if (changed) await saveChats(chats);
+      renderMessages("aeChatLog", chat);
+      const chatUnread = unreadChatCount(await loadChats());
+      document.getElementById("chatCount").textContent = chatUnread;
+      document.getElementById("chatCount").classList.toggle("show", chatUnread > 0);
+    }
+    async function openChatModal() {
+      document.getElementById("chatModal").classList.add("open");
+      await renderAeChatLeadOptions();
+    }
+    function closeChatModal() {
+      document.getElementById("chatModal").classList.remove("open");
+      document.getElementById("aeChatMessage").value = "";
+    }
+    function showSection(id) {
+      document.getElementById("dashboardPanel").classList.toggle("hidden", id !== "dashboardPanel");
+      document.getElementById("recordsPanel").classList.toggle("hidden", id !== "recordsPanel");
+      document.getElementById("wonPanel").classList.toggle("hidden", id !== "wonPanel");
+      document.getElementById("lostPanel").classList.toggle("hidden", id !== "lostPanel");
+      document.getElementById("navDashboard").classList.toggle("active", id === "dashboardPanel");
+      document.getElementById("navOpportunities").classList.toggle("active", id === "recordsPanel");
+      document.getElementById("navWon").classList.toggle("active", id === "wonPanel");
+      document.getElementById("navLost").classList.toggle("active", id === "lostPanel");
+    }
+    function openDecisionModal(id) {
+      const record = load().find(item => item.id === id);
+      if (!record) return;
+      activeOpportunityId = id;
+      document.getElementById("decisionTitle").textContent = record.contact;
+      document.getElementById("decisionSubtitle").textContent = record.company;
+      document.getElementById("opportunityDecision").value = record.aeDecision === "Reject" ? "No" : "Yes";
+      document.getElementById("rejectionReason").value = record.aeRejectionReason || "";
+      document.getElementById("decisionMom").innerHTML = record.mom ? `<div class="mom-box">
+        <div class="record-name">MoM from BDR</div>
+        <div class="muted">${record.momUpdatedAt ? "Saved " + new Date(record.momUpdatedAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "numeric", minute: "2-digit" }) : "Saved against this opportunity"}</div>
+        <div class="mom-text">${esc(record.mom)}</div>
+      </div>` : `<div class="mom-box"><div class="record-name">MoM from BDR</div><div class="muted">No MoM saved for this opportunity yet.</div></div>`;
+      toggleReasonField();
+      document.getElementById("decisionModal").classList.add("open");
+    }
+    function closeDecisionModal() {
+      document.getElementById("decisionModal").classList.remove("open");
+      activeOpportunityId = null;
+    }
+    function toggleReasonField() {
+      const isNo = document.getElementById("opportunityDecision").value === "No";
+      document.getElementById("reasonField").classList.toggle("show", isNo);
+    }
+    document.getElementById("decisionForm").addEventListener("submit", event => {
+      event.preventDefault();
+      const decision = document.getElementById("opportunityDecision").value;
+      const reason = document.getElementById("rejectionReason").value.trim();
+      if (decision === "No" && !reason) {
+        document.getElementById("rejectionReason").focus();
+        return;
+      }
+      const items = load();
+      const record = items.find(item => item.id === activeOpportunityId);
+      if (!record) return;
+      record.aeDecision = decision === "Yes" ? "Accept" : "Reject";
+      record.aeRejectionReason = decision === "No" ? reason : "";
+      record.step = decision === "Yes" ? "accepted" : "rejected";
+      record.log = record.log || [];
+      record.log.unshift([
+        decision === "Yes" ? "AE marked opportunity as Yes" : "AE marked opportunity as No",
+        decision === "Yes" ? "Opportunity accepted by AE." : "Reason: " + reason
+      ]);
+      localStorage.setItem(storeKey, JSON.stringify(items));
+      closeDecisionModal();
+      render();
+    });
+    document.getElementById("chatForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      const id = Number(document.getElementById("aeChatLeadSelect").value);
+      const text = document.getElementById("aeChatMessage").value.trim();
+      if (!id || !text) {
+        document.getElementById("aeChatMessage").focus();
+        return;
+      }
+      const chats = await loadChats();
+      const chat = chats.find(item => (item.chatType || aeChatType) === aeChatType && Number(item.opportunityId) === id && String(item.ae || "").toLowerCase() === currentAe.toLowerCase());
+      if (!chat) return;
+      chat.messages = chat.messages || [];
+      chat.messages.push({
+        id: Date.now(),
+        senderRole: "AE",
+        senderName: currentAe,
+        senderEmail: auth.email,
+        text,
+        createdAt: new Date().toISOString(),
+        readByAe: true,
+        readByManager: false
+      });
+      chat.updatedAt = new Date().toISOString();
+      await saveChats(chats);
+      document.getElementById("aeChatMessage").value = "";
+      await renderAeChatThread();
+    });
+    window.logout = logout;
+    window.showSection = showSection;
+    window.openDemoGmail = openDemoGmail;
+    window.openChatModal = openChatModal;
+    window.closeChatModal = closeChatModal;
+    window.renderAeChatThread = renderAeChatThread;
+    window.toggleNotifications = toggleNotifications;
+    window.respondToReminder = respondToReminder;
+    window.openDecisionModal = openDecisionModal;
+    window.closeDecisionModal = closeDecisionModal;
+    window.toggleReasonField = toggleReasonField;
+    window.addEventListener("storage", event => {
+      if (event.key === notificationKey || event.key === storeKey) render();
+    });
+    setInterval(render, 5000);
+    render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BDR Flow Console</title>
+  <script>
+    const auth = JSON.parse(sessionStorage.getItem("bdr_auth") || localStorage.getItem("bdr_auth") || "null");
+    if (!auth || auth.role !== "BDR") window.location.href = "index.html";
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f6fb; color: #171a22; }
+    .app { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+    .sidebar { background: #161a22; color: #fff; padding: 22px 18px; display: flex; flex-direction: column; gap: 20px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 850; }
+    .logo { width: 40px; height: 40px; border-radius: 8px; background: #4f67ff; display: grid; place-items: center; font-size: 13px; }
+    .nav { display: grid; gap: 6px; }
+    .nav button { height: 38px; border: 0; border-radius: 8px; background: transparent; color: rgba(255,255,255,.64); text-align: left; padding: 0 12px; font: inherit; cursor: pointer; }
+    .nav button.active, .nav button:hover { background: rgba(79,103,255,.22); color: #fff; }
+    .side-note { margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.08); color: rgba(255,255,255,.54); font-size: 12px; line-height: 1.5; }
+    main { padding: 28px 32px 34px; min-width: 0; }
+    .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 20px; }
+    .top-actions { display: flex; gap: 10px; align-items: center; position: relative; }
+    h1 { font-size: 25px; line-height: 1.12; }
+    .sub { margin-top: 6px; color: #687183; font-size: 13px; max-width: 820px; line-height: 1.45; }
+    .btn { height: 38px; border: 0; border-radius: 8px; padding: 0 14px; font-size: 13px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 7px; white-space: nowrap; }
+    .btn-primary { background: #4f67ff; color: #fff; }
+    .btn-secondary { background: #eef1f7; color: #333b49; }
+    .btn-danger { background: #fee2e2; color: #b91c1c; }
+    .btn-success { background: #dcfce7; color: #15803d; }
+    .bell { width: 38px; height: 38px; border: 1px solid #e4e9f2; border-radius: 8px; background: #fff; color: #171a22; cursor: pointer; position: relative; font-size: 17px; }
+    .chat-btn { width: 38px; height: 38px; border: 1px solid #e4e9f2; border-radius: 8px; background: #fff; cursor: pointer; position: relative; font-size: 17px; }
+    .badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; border-radius: 999px; background: #ef4444; color: #fff; font-size: 10px; font-weight: 900; display: none; align-items: center; justify-content: center; padding: 0 5px; }
+    .badge.show { display: flex; }
+    .notif-menu { position: absolute; top: 46px; right: 104px; width: min(360px, 92vw); background: #fff; border: 1px solid #e4e9f2; border-radius: 8px; box-shadow: 0 18px 50px rgba(18,24,38,.16); display: none; z-index: 10; overflow: hidden; }
+    .notif-menu.open { display: block; }
+    .notif-head { padding: 12px 14px; border-bottom: 1px solid #eef1f6; font-size: 13px; font-weight: 900; }
+    .notif-list { max-height: 320px; overflow: auto; }
+    .notif-item { padding: 12px 14px; border-bottom: 1px solid #f0f3f8; display: grid; gap: 4px; }
+    .notif-item.unread { background: #f5f7ff; }
+    .notif-title { font-size: 13px; font-weight: 900; }
+    .notif-copy { font-size: 12px; color: #687183; line-height: 1.35; }
+    .notif-empty { padding: 24px 14px; color: #687183; font-size: 13px; text-align: center; }
+    .layout { display: grid; grid-template-columns: 1fr; gap: 18px; align-items: start; }
+    .panel { background: #fff; border: 1px solid #e4e9f2; border-radius: 8px; overflow: hidden; }
+    .panel.hidden { display: none; }
+    .panel-head { min-height: 54px; border-bottom: 1px solid #eef1f6; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .panel-title { font-size: 14px; font-weight: 850; }
+    .panel-note { color: #747d8d; font-size: 12px; margin-top: 2px; }
+    .dashboard { padding: 16px; display: grid; gap: 18px; }
+    .dash-cards { display: grid; grid-template-columns: repeat(4, minmax(150px, 1fr)); gap: 12px; }
+    .dash-card { border: 1px solid #edf0f6; border-radius: 8px; padding: 14px; background: #fbfcff; }
+    .dash-card label { display: block; color: #747d8d; font-size: 12px; font-weight: 850; margin-bottom: 8px; }
+    .dash-card strong { font-size: 26px; line-height: 1; }
+    .bar-chart { border: 1px solid #edf0f6; border-radius: 8px; padding: 14px; display: grid; gap: 12px; }
+    .bar-row { display: grid; grid-template-columns: 160px 1fr 44px; gap: 12px; align-items: center; }
+    .bar-label { font-size: 13px; font-weight: 850; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bar-track { height: 30px; border-radius: 8px; background: #eef1f7; overflow: hidden; }
+    .bar-fill { height: 100%; min-width: 34px; border-radius: 8px; background: linear-gradient(90deg, #4f67ff, #16a34a); }
+    .bar-count { color: #333b49; font-size: 13px; font-weight: 850; text-align: right; }
+    .records { padding: 12px; display: grid; gap: 10px; }
+    .record { border: 1px solid #edf0f6; border-radius: 8px; padding: 12px; cursor: pointer; display: grid; gap: 8px; text-decoration: none; color: inherit; }
+    .record:hover { border-color: #4f67ff; background: #fbfcff; }
+    .record.active { border-color: #4f67ff; background: #f5f7ff; }
+    .record-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .record-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 2px; }
+    .record-name { font-weight: 850; font-size: 13px; }
+    .muted { color: #747d8d; font-size: 12px; line-height: 1.35; }
+    .pill { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 850; white-space: nowrap; }
+    .pill-blue { background: #eef2ff; color: #4f46e5; }
+    .pill-green { background: #dcfce7; color: #15803d; }
+    .pill-orange { background: #fff7ed; color: #c2410c; }
+    .pill-red { background: #fee2e2; color: #b91c1c; }
+    .eye-btn { width: 32px; height: 28px; border: 1px solid #e4e9f2; border-radius: 7px; background: #fff; cursor: pointer; font-size: 14px; }
+    .reason-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .modal { position: fixed; inset: 0; background: rgba(12,16,24,.48); display: none; align-items: center; justify-content: center; padding: 20px; z-index: 20; }
+    .modal.open { display: flex; }
+    .dialog { width: min(680px, 96vw); background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 24px 80px rgba(0,0,0,.24); }
+    .dialog-head { height: 54px; padding: 0 18px; border-bottom: 1px solid #eef0f5; display: flex; align-items: center; justify-content: space-between; }
+    .dialog-head h2 { font-size: 16px; }
+    .dialog-body { padding: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .field.full { grid-column: 1 / -1; }
+    .field label { display: block; font-size: 12px; color: #5f6675; font-weight: 850; margin-bottom: 6px; }
+    input, select, textarea { width: 100%; border: 1px solid #dde3ee; border-radius: 8px; background: #fff; color: #171a22; font: inherit; outline: none; }
+    input, select { height: 38px; padding: 0 12px; }
+    textarea { min-height: 92px; padding: 10px 12px; resize: vertical; }
+    input:focus, select:focus, textarea:focus { border-color: #4f67ff; box-shadow: 0 0 0 3px rgba(79,103,255,.12); }
+    .dialog-actions { padding: 0 18px 18px; display: flex; justify-content: flex-end; gap: 10px; }
+    .chat-dialog { width: min(760px, 96vw); max-height: min(760px, 92vh); display: grid; grid-template-rows: auto 1fr auto; }
+    .chat-dialog .dialog-head { height: auto; min-height: 54px; align-items: flex-start; padding: 14px 18px; }
+    .chat-dialog .dialog-body { grid-template-columns: 1fr; overflow: auto; }
+    .chat-shell { border: 1px solid #edf0f6; border-radius: 8px; overflow: hidden; }
+    .chat-log { min-height: 190px; max-height: 300px; overflow: auto; padding: 12px; display: grid; gap: 10px; background: #fbfcff; }
+    .message { max-width: 82%; border-radius: 8px; padding: 9px 11px; background: #eef1f7; display: grid; gap: 4px; }
+    .message.mine { margin-left: auto; background: #eef2ff; }
+    .message strong { font-size: 12px; }
+    .message p { font-size: 13px; line-height: 1.4; white-space: pre-line; }
+    @media (max-width: 1120px) {
+      .app { grid-template-columns: 1fr; }
+      .layout { grid-template-columns: 1fr; }
+      main { padding: 22px 16px; }
+      .dash-cards { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      .top { grid-template-columns: 1fr; flex-direction: column; }
+      .dialog-body { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: 1fr; gap: 6px; }
+      .bar-count { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><div class="logo">BDR</div><span>Flow Console</span></div>
+      <div class="nav">
+        <button id="navDashboard" onclick="showSection('dashboardPanel')">Dashboard</button>
+        <button id="navS1" onclick="showSection('s1Panel')">S1 Opportunities</button>
+        <button id="navS2" onclick="showSection('s2Panel')">S2 Opportunities</button>
+        <button class="active" id="navOpportunities" onclick="showSection('recordsPanel')">Demo Done</button>
+        <button id="navWon" onclick="showSection('wonPanel')">Qualified Opportunities</button>
+        <button id="navLost" onclick="showSection('lostPanel')">Lost Opportunities</button>
+      </div>
+      <div class="side-note">Operate the BDR to AE process: capture calls, run AI, push CRM and Slack updates, handle reminders, demos, AE decisions, and contests.</div>
+    </aside>
+
+    <main>
+      <div class="top">
+        <div>
+          <h1>BDR to AE qualification console</h1>
+          <p class="sub">A working product experience for the flow. Select an opportunity, see the current operational state, and use guided actions to move the opportunity forward.</p>
+        </div>
+        <div class="top-actions">
+          <button class="bell" onclick="toggleSelfReminders()" title="My reminders">🔔<span class="badge" id="selfReminderCount">0</span></button>
+          <button class="chat-btn" onclick="openChatModal()" title="BDR Manager chat">💬<span class="badge" id="chatCount">0</span></button>
+          <div class="notif-menu" id="selfReminderMenu">
+            <div class="notif-head">My Reminders</div>
+            <div class="notif-list" id="selfReminderList"></div>
+          </div>
+          <button class="btn btn-secondary" onclick="logout()">Logout</button>
+          <button class="btn btn-primary" onclick="openModal()">+ Add Opportunity</button>
+        </div>
+      </div>
+
+      <div class="layout">
+        <section class="panel hidden" id="dashboardPanel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Dashboard</div>
+              <div class="panel-note">Lead volume by BDR owner.</div>
+            </div>
+          </div>
+          <div class="dashboard">
+            <div class="dash-cards">
+              <div class="dash-card"><label>Total Leads</label><strong id="totalLeads">0</strong></div>
+              <div class="dash-card"><label>Active Leads</label><strong id="activeLeads">0</strong></div>
+              <div class="dash-card"><label>Qualified Leads</label><strong id="wonLeads">0</strong></div>
+              <div class="dash-card"><label>Lost Leads</label><strong id="lostLeads">0</strong></div>
+            </div>
+            <div class="bar-chart" id="bdrLeadChart"></div>
+          </div>
+        </section>
+
+        <section class="panel hidden" id="s1Panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">S1 Opportunities</div>
+              <div class="panel-note">S1 opportunities will appear here.</div>
+            </div>
+            <button class="btn btn-primary" onclick="openS1Modal()">+ Add S1 Opportunity</button>
+          </div>
+          <div class="records" id="s1Records"></div>
+        </section>
+
+        <section class="panel hidden" id="s2Panel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">S2 Opportunities</div>
+              <div class="panel-note">S2 opportunities will appear here.</div>
+            </div>
+          </div>
+          <div class="records" id="s2Records"></div>
+        </section>
+
+        <section class="panel" id="recordsPanel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Demo Done</div>
+              <div class="panel-note">Choose a demo-done opportunity to review.</div>
+            </div>
+          </div>
+          <div class="records" id="records"></div>
+        </section>
+
+        <section class="panel hidden" id="wonPanel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Qualified Opportunities</div>
+              <div class="panel-note">AE-approved opportunities marked Yes appear here.</div>
+            </div>
+          </div>
+          <div class="records" id="wonRecords"></div>
+        </section>
+
+        <section class="panel hidden" id="lostPanel">
+          <div class="panel-head">
+            <div>
+              <div class="panel-title">Lost Opportunities</div>
+              <div class="panel-note">Rejected, closed, or nurture opportunities appear here.</div>
+            </div>
+          </div>
+          <div class="records" id="lostRecords"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="modal" id="chatModal">
+    <form class="dialog chat-dialog" id="chatForm">
+      <div class="dialog-head">
+        <div>
+          <h2>BDR Manager Chat</h2>
+          <div class="muted">Lead-specific discussion with your BDR Manager.</div>
+        </div>
+        <button class="btn btn-secondary" type="button" onclick="closeChatModal()">Close</button>
+      </div>
+      <div class="dialog-body">
+        <div class="field">
+          <label for="bdrChatLeadSelect">Lead</label>
+          <select id="bdrChatLeadSelect" onchange="renderBdrChatThread()"></select>
+        </div>
+        <div class="chat-shell">
+          <div class="chat-log" id="bdrChatLog"></div>
+        </div>
+        <div class="field">
+          <label for="bdrChatMessage">Reply</label>
+          <textarea id="bdrChatMessage" placeholder="Type reply to BDR Manager..."></textarea>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-secondary" type="button" onclick="closeChatModal()">Cancel</button>
+        <button class="btn btn-primary" type="submit">Send Reply</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal" id="modal">
+    <form class="dialog" id="form">
+      <div class="dialog-head">
+        <h2>Add Opportunity</h2>
+        <button class="btn btn-secondary" type="button" onclick="closeModal()">Close</button>
+      </div>
+      <div class="dialog-body">
+        <div class="field"><label>Opportunity Name</label><input id="contact" required /></div>
+        <div class="field"><label>Company</label><input id="company" required /></div>
+        <div class="field"><label>BDR</label><input id="bdr" value="Ranjana Priya" required /></div>
+        <div class="field">
+          <label>AE mapped</label>
+          <select id="ae" required>
+            <option value="Barnali">Barnali</option>
+            <option value="Satya">Satya</option>
+          </select>
+        </div>
+        <div class="field full"><label>Intro Call Notes</label><textarea id="notes" required></textarea></div>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-secondary" type="button" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" type="submit">Create</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal" id="reasonModal">
+    <div class="dialog">
+      <div class="dialog-head">
+        <h2 id="reasonTitle">AE Reason</h2>
+        <button class="btn btn-secondary" type="button" onclick="closeReasonModal()">Close</button>
+      </div>
+      <div class="dialog-body" style="grid-template-columns:1fr">
+        <div>
+          <div class="muted" style="margin-bottom:8px">Reason provided by AE</div>
+          <div id="reasonText" style="line-height:1.5"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="reminderModal">
+    <form class="dialog" id="reminderForm">
+      <div class="dialog-head">
+        <h2>Schedule Reminder</h2>
+        <button class="btn btn-secondary" type="button" onclick="closeReminderModal()">Close</button>
+      </div>
+      <div class="dialog-body" style="grid-template-columns:1fr">
+        <div>
+          <div id="reminderTitle" class="record-name"></div>
+          <div id="reminderSubtitle" class="muted" style="margin-top:4px"></div>
+        </div>
+        <div class="field" id="reminderTypeField">
+          <label for="reminderType">Reminder type</label>
+          <select id="reminderType">
+            <option value="next-step">Reminder for the next step</option>
+            <option value="sal">Reminder for the SAL</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="reminderAt">When should this reminder be sent?</label>
+          <input id="reminderAt" type="datetime-local" required />
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn btn-secondary" type="button" onclick="closeReminderModal()">Cancel</button>
+        <button class="btn btn-primary" type="submit">Schedule Reminder</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const workflow = [
+      "intro", "gong", "ai", "push", "reminder24", "details", "reconnect", "fill", "demoStage", "schedule",
+      "aeDemo", "demoDone", "followup24", "timer48", "aeDecision", "accepted", "notifyAccept", "sales",
+      "rejected", "notifyReject", "contest", "close", "raise", "manager", "contestClose", "reassign", "newAe", "moreInfo"
+    ];
+    const storeKey = "bdr_flow_records_v1";
+    const notificationKey = "bdr_ae_notifications_v1";
+    const selfReminderKey = "bdr_self_reminders_v1";
+    const chatKey = "bdr_ae_manager_chats_v1";
+    const quantestKey = "bdr_quantest_notifications_v1";
+    const bdrChatType = "bdr-manager-bdr";
+    const aeEmailByName = {
+      Barnali: "barnali@yopmail.com"
+    };
+    const seed = [
+      {
+        id: 1,
+        contact: "John Fay",
+        company: "BirchStreet",
+        bdr: "Ranjana Priya",
+        ae: "Barnali",
+        step: "reminder24",
+        detailsComplete: false,
+        aeDecision: "Pending",
+        notes: "Need budget owner and implementation timeline. Pain point is missed follow-ups after demos.",
+        log: [
+          ["Gong recording captured", "Intro call recording synced."],
+          ["AI output generated", "SDR notes, missing details, questions, and readiness score created."],
+          ["CRM + Slack updated", "Output pushed to CRM and Slack channel."]
+        ]
+      },
+      {
+        id: 2,
+        contact: "Anita Mehta",
+        company: "Global Partners",
+        bdr: "Priya Sharma",
+        ae: "Barnali",
+        step: "timer48",
+        detailsComplete: true,
+        aeDecision: "Pending",
+        notes: "Pilot approved. Demo completed. AE decision due within 48 hours.",
+        log: [
+          ["Demo scheduled via RevenueHero", "AE calendar invite sent."],
+          ["Demo completed", "24h reminder sent to BDR and AE."]
+        ]
+      },
+      {
+        id: 3,
+        contact: "Sanjay Rao",
+        company: "TechNova",
+        bdr: "Ranjana Priya",
+        ae: "Satya",
+        step: "contest",
+        detailsComplete: true,
+        aeDecision: "Reject",
+        notes: "AE rejected for budget mismatch. BDR may contest using board meeting timeline context.",
+        log: [
+          ["AE rejection reason captured", "Pricing gap and unclear authority."],
+          ["BDR + managers notified", "Contest option opened."]
+        ]
+      }
+    ];
+    let currentId = null;
+    let reminderOpportunityId = null;
+    let reminderMode = "ae";
+    let createStage = "demo";
+
+    function load() {
+      if (!localStorage.getItem(storeKey)) localStorage.setItem(storeKey, JSON.stringify(seed));
+      try {
+        const items = JSON.parse(localStorage.getItem(storeKey) || "[]");
+        let changed = false;
+        items.forEach(item => {
+          if (item.ae === "Arjun Kumar" || item.ae === "Neha Mehta") {
+            item.ae = "Barnali";
+            changed = true;
+          }
+        });
+        if (changed) localStorage.setItem(storeKey, JSON.stringify(items));
+        return items;
+      } catch (error) { return []; }
+    }
+    function save(items) { localStorage.setItem(storeKey, JSON.stringify(items)); }
+    async function loadNotifications() {
+      try {
+        const response = await fetch("/api/notifications", { cache: "no-store" });
+        if (response.ok) return await response.json();
+      } catch (error) {}
+      try { return JSON.parse(localStorage.getItem(notificationKey) || "[]"); } catch (error) { return []; }
+    }
+    async function saveNotifications(items) {
+      localStorage.setItem(notificationKey, JSON.stringify(items));
+      try {
+        await fetch("/api/notifications", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(items)
+        });
+      } catch (error) {}
+    }
+    async function loadMailbox() {
+      try {
+        const response = await fetch("/api/mailbox", { cache: "no-store" });
+        if (response.ok) return await response.json();
+      } catch (error) {}
+      try { return JSON.parse(localStorage.getItem("bdr_demo_mailbox_v1") || "[]"); } catch (error) { return []; }
+    }
+    async function saveMailbox(items) {
+      localStorage.setItem("bdr_demo_mailbox_v1", JSON.stringify(items));
+      try {
+        await fetch("/api/mailbox", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(items)
+        });
+      } catch (error) {}
+    }
+    async function loadChats() {
+      try {
+        const response = await fetch("/api/chats", { cache: "no-store" });
+        if (response.ok) return await response.json();
+      } catch (error) {}
+      try { return JSON.parse(localStorage.getItem(chatKey) || "[]"); } catch (error) { return []; }
+    }
+    async function saveChats(items) {
+      localStorage.setItem(chatKey, JSON.stringify(items));
+      try {
+        await fetch("/api/chats", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(items)
+        });
+      } catch (error) {}
+    }
+    async function loadQuantests() {
+      try {
+        const response = await fetch("/api/quantest", { cache: "no-store" });
+        if (response.ok) return await response.json();
+      } catch (error) {}
+      try { return JSON.parse(localStorage.getItem(quantestKey) || "[]"); } catch (error) { return []; }
+    }
+    async function saveQuantests(items) {
+      localStorage.setItem(quantestKey, JSON.stringify(items));
+      try {
+        await fetch("/api/quantest", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(items)
+        });
+      } catch (error) {}
+    }
+    function loadSelfReminders() {
+      try { return JSON.parse(localStorage.getItem(selfReminderKey) || "[]"); } catch (error) { return []; }
+    }
+    function saveSelfReminders(items) { localStorage.setItem(selfReminderKey, JSON.stringify(items)); }
+    function esc(value) { return String(value || "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c])); }
+    function currentBdrName() {
+      const byEmail = { "ranjana@yopmail.com": "Ranjana Priya" };
+      return byEmail[(auth && auth.email || "").toLowerCase()] || "Ranjana Priya";
+    }
+    function getCurrent() {
+      const items = load();
+      if (!currentId && items[0]) currentId = items[0].id;
+      return items.find(item => item.id === currentId) || items[0];
+    }
+    function label(step) {
+      const labels = {
+        intro: "Intro Call Completed", gong: "Gong Recording Captured", ai: "AI Processing", push: "CRM + Slack Updated",
+        reminder24: "24h BDR Reminder", details: "Detail Check", reconnect: "Reconnect with Opportunity",
+        fill: "Fill Missing Details", demoStage: "Move to Demo Stage", schedule: "Demo Scheduled",
+        aeDemo: "AE Conducts Demo", demoDone: "Demo Completed", followup24: "BDR + AE Follow-up",
+        timer48: "48h AE Decision Timer", aeDecision: "AE Decision", accepted: "Opportunity Accepted",
+        notifyAccept: "Acceptance Notifications", sales: "Sales Cycle", rejected: "AE Rejected",
+        notifyReject: "Rejection Notifications", contest: "Contest Decision", close: "Close / Nurture",
+        raise: "Contest Raised", manager: "Manager Review", contestClose: "Contest Closed",
+        reassign: "Reassigned to AE", newAe: "New AE Continues", moreInfo: "More Info Requested"
+      };
+      return labels[step] || step;
+    }
+    function copyFor(step) {
+      const copy = {
+        intro: "The BDR has completed the intro call and can attach the Gong recording.",
+        gong: "The call is captured. Send it to AI processing to extract the sales context.",
+        ai: "AI is preparing notes, missing fields, questions, and qualification readiness.",
+        push: "The generated output is available in CRM and Slack.",
+        reminder24: "Send the BDR a 24h reminder to send MoM and update CRM.",
+        details: "Decide whether the opportunity has enough information to move forward.",
+        reconnect: "The BDR should reconnect with the opportunity to gather missing details.",
+        fill: "Missing fields are being completed before rechecking readiness.",
+        demoStage: "The opportunity is ready to move into demo scheduling.",
+        schedule: "Schedule the demo via RevenueHero.",
+        aeDemo: "AE is conducting the demo.",
+        demoDone: "Record demo completion and trigger follow-up reminder.",
+        followup24: "BDR and AE should follow up and define next steps.",
+        timer48: "The AE has 48 hours to accept or reject the opportunity.",
+        aeDecision: "Capture the AE decision.",
+        accepted: "The AE accepted the opportunity.",
+        notifyAccept: "Notify BDR, BDR manager, and AE manager.",
+        sales: "The opportunity proceeds with the sales cycle.",
+        rejected: "Capture the AE rejection reason.",
+        notifyReject: "Notify BDR and managers about the rejection.",
+        contest: "BDR decides whether to contest the rejection.",
+        close: "The opportunity moves to close or nurture.",
+        raise: "BDR submitted contest justification.",
+        manager: "BDR manager reviews the contest.",
+        contestClose: "Contest rejected. Opportunity is closed or nurtured.",
+        reassign: "Opportunity is reassigned to another AE.",
+        newAe: "New AE continues the process.",
+        moreInfo: "BDR provides additional details for manager review."
+      };
+      return copy[step] || "Workflow step is ready.";
+    }
+    function status(record) {
+      if (["accepted", "notifyAccept", "sales", "newAe"].includes(record.step)) return ["Qualified", "pill-green"];
+      if (["close", "contestClose"].includes(record.step)) return ["Closed", "pill-red"];
+      if (["rejected", "notifyReject", "contest", "raise", "manager", "moreInfo"].includes(record.step)) return ["Review", "pill-orange"];
+      return ["Active", "pill-blue"];
+    }
+    function update(mutator) {
+      const items = load();
+      const record = items.find(item => item.id === currentId);
+      if (!record) return;
+      mutator(record);
+      save(items);
+      render();
+    }
+    function addLog(record, title, text) { record.log.unshift([title, text]); }
+    function go(step, title, text) {
+      update(record => {
+        record.step = step;
+        addLog(record, title || label(step), text || "Workflow step updated.");
+      });
+    }
+    function runAiBundle() {
+      update(record => {
+        record.step = "push";
+        addLog(record, "AI engine completed processing", "Generated SDR notes, missing details, suggested questions, and qualification readiness.");
+        addLog(record, "CRM + Slack output pushed", "Summary posted to CRM and Slack channel.");
+      });
+    }
+    function detailsNo() {
+      update(record => {
+        record.detailsComplete = false;
+        record.step = "reconnect";
+        addLog(record, "Details incomplete", "BDR receives reminder to reconnect and fill missing details.");
+      });
+    }
+    function detailsYes() {
+      update(record => {
+        record.detailsComplete = true;
+        record.step = "demoStage";
+        addLog(record, "Details complete", "Opportunity moved to demo stage.");
+      });
+    }
+    function aeAccept() {
+      update(record => {
+        record.aeDecision = "Accept";
+        record.step = "accepted";
+        addLog(record, "AE accepted opportunity", "BDR, BDR manager, and AE manager will be notified.");
+      });
+    }
+    function aeReject() {
+      update(record => {
+        record.aeDecision = "Reject";
+        record.step = "rejected";
+        addLog(record, "AE rejected opportunity", "Rejection reason captured and managers notified.");
+      });
+    }
+    function contest(choice) {
+      update(record => {
+        record.step = choice === "Yes" ? "raise" : "close";
+        addLog(record, choice === "Yes" ? "BDR raised contest" : "BDR declined contest", choice === "Yes" ? "Justification sent to BDR manager." : "Opportunity moved to close or nurture.");
+      });
+    }
+    function manager(choice) {
+      update(record => {
+        record.step = choice === "Approve" ? "reassign" : choice === "Ask More Info" ? "moreInfo" : "contestClose";
+        addLog(record, "BDR manager decision: " + choice, choice === "Approve" ? "Opportunity reassigned to another AE." : choice === "Ask More Info" ? "BDR must provide additional details." : "Contest rejected. Opportunity closed or nurtured.");
+      });
+    }
+    function prepareReminderModal(record, mode) {
+      const now = new Date();
+      const nextMinute = new Date(now.getTime() + 60 * 1000);
+      reminderOpportunityId = record.id;
+      reminderMode = mode;
+      document.getElementById("reminderTitle").textContent = record.contact + " · " + record.company;
+      document.getElementById("reminderSubtitle").textContent = mode === "self" ? "Reminder will be scheduled for you only." : "Reminder will be sent to " + record.ae + " and emailed to " + (aeEmailByName[record.ae] || "mapped AE") + ".";
+      document.getElementById("reminderTypeField").style.display = mode === "self" ? "none" : "block";
+      document.getElementById("reminderType").value = "next-step";
+      document.getElementById("reminderAt").min = toDateTimeLocalValue(now);
+      document.getElementById("reminderAt").value = toDateTimeLocalValue(nextMinute);
+      document.getElementById("reminderModal").classList.add("open");
+    }
+    function sendReminder(id, event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const items = load();
+      const record = items.find(item => item.id === id);
+      if (!record || record.ae !== "Barnali") return;
+      prepareReminderModal(record, "ae");
+    }
+    function setSelfReminder(id, event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const record = load().find(item => item.id === id);
+      if (!record) return;
+      prepareReminderModal(record, "self");
+    }
+    function toDateTimeLocalValue(date) {
+      const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+      return local.toISOString().slice(0, 16);
+    }
+    function formatReminderDate(value) {
+      return new Date(value).toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+      });
+    }
+    async function saveReminderEmail(record, scheduledText, reminderAt) {
+      const email = aeEmailByName[record.ae];
+      if (!email) return;
+      const mailbox = await loadMailbox();
+      mailbox.unshift({
+        id: Date.now(),
+        to: email,
+        from: record.bdr + " <ranjana@yopmail.com>",
+        subject: "Reminder: " + record.contact + " at " + record.company,
+        preview: record.bdr + " scheduled a reminder for " + record.contact + " at " + record.company + ".",
+        body: [
+          "Hi " + record.ae + ",",
+          "",
+          record.bdr + " scheduled a reminder for this opportunity.",
+          "",
+          "Opportunity: " + record.contact,
+          "Company: " + record.company,
+          "Scheduled reminder time: " + scheduledText,
+          "",
+          "Please review this opportunity in the AE Flow Console."
+        ].join("\n"),
+        opportunityId: record.id,
+        contact: record.contact,
+        company: record.company,
+        scheduledFor: new Date(reminderAt).toISOString(),
+        createdAt: new Date().toISOString(),
+        read: false
+      });
+      await saveMailbox(mailbox);
+    }
+    function closeReminderModal() {
+      reminderOpportunityId = null;
+      reminderMode = "ae";
+      document.getElementById("reminderModal").classList.remove("open");
+    }
+    async function createScheduledReminder(event) {
+      event.preventDefault();
+      const reminderAt = document.getElementById("reminderAt").value;
+      const items = load();
+      const record = items.find(item => item.id === reminderOpportunityId);
+      if (!record || !reminderAt) return;
+      const scheduledText = formatReminderDate(reminderAt);
+      const reminderType = document.getElementById("reminderType").value;
+      const reminderTypeLabel = reminderType === "next-step" ? "Reminder for the next step" : "Reminder for the SAL";
+      if (reminderMode === "self") {
+        const reminders = loadSelfReminders();
+        reminders.unshift({
+          id: Date.now(),
+          opportunityId: record.id,
+          contact: record.contact,
+          company: record.company,
+          bdr: record.bdr,
+          message: "Reminder for " + record.contact + " at " + record.company + " scheduled for " + scheduledText + ".",
+          createdAt: new Date().toISOString(),
+          scheduledFor: new Date(reminderAt).toISOString(),
+          read: false
+        });
+        saveSelfReminders(reminders);
+        record.log = record.log || [];
+        record.log.unshift(["Self reminder scheduled", "Reminder scheduled for " + scheduledText + "."]);
+        save(items);
+        closeReminderModal();
+        alert("Self reminder scheduled for " + scheduledText + ".");
+        render();
+        return;
+      }
+      const notifications = await loadNotifications();
+      notifications.unshift({
+        id: Date.now(),
+        opportunityId: record.id,
+        contact: record.contact,
+        company: record.company,
+        ae: record.ae,
+        emailTo: aeEmailByName[record.ae] || "",
+        bdr: record.bdr,
+        reminderType,
+        reminderTypeLabel,
+        message: record.bdr + " scheduled " + reminderTypeLabel.toLowerCase() + " for " + record.contact + " at " + record.company + " on " + scheduledText + ".",
+        createdAt: new Date().toISOString(),
+        scheduledFor: new Date(reminderAt).toISOString(),
+        read: false
+      });
+      await saveNotifications(notifications);
+      record.log = record.log || [];
+      record.log.unshift(["Reminder scheduled to AE", reminderTypeLabel + " scheduled for " + scheduledText + "."]);
+      record.log.unshift(["Email reminder prepared", "Email addressed to " + (aeEmailByName[record.ae] || record.ae) + "."]);
+      save(items);
+      closeReminderModal();
+      await saveReminderEmail(record, scheduledText, reminderAt);
+      alert("Reminder scheduled for " + scheduledText + ". AE bell will show it at that time.");
+      render();
+    }
+    async function deleteLead(id, event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const items = load();
+      const record = items.find(item => item.id === id);
+      if (!record) return;
+      if (!confirm("Delete " + record.contact + " from opportunities?")) return;
+      const remaining = items.filter(item => item.id !== id);
+      const notifications = (await loadNotifications()).filter(item => item.opportunityId !== id);
+      const quantests = (await loadQuantests()).filter(item => Number(item.opportunityId) !== Number(id));
+      save(remaining);
+      await saveNotifications(notifications);
+      await saveQuantests(quantests);
+      if (currentId === id) currentId = remaining[0] ? remaining[0].id : null;
+      render();
+    }
+    function moveToS2(id, event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const items = load();
+      const record = items.find(item => item.id === id);
+      if (!record) return;
+      record.stage = "s2";
+      record.log = record.log || [];
+      record.log.unshift(["Moved to S2 Opportunities", "BDR moved this lead from S1 to S2."]);
+      save(items);
+      showSection("s2Panel");
+      render();
+    }
+    function moveToDemoDone(id, event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const items = load();
+      const record = items.find(item => item.id === id);
+      if (!record) return;
+      record.stage = "demo";
+      record.step = "demoDone";
+      record.log = record.log || [];
+      record.log.unshift(["Moved to Demo Done", "BDR moved this lead from S2 to Demo Done."]);
+      save(items);
+      showSection("recordsPanel");
+      render();
+    }
+    function viewAeReason(id, event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const record = load().find(item => item.id === id);
+      if (!record) return;
+      document.getElementById("reasonTitle").textContent = record.contact + " · Opportunity NO";
+      document.getElementById("reasonText").textContent = record.aeRejectionReason || "No reason provided.";
+      document.getElementById("reasonModal").classList.add("open");
+    }
+    function closeReasonModal() {
+      document.getElementById("reasonModal").classList.remove("open");
+    }
+    function latestNextStepReminder(item, notifications) {
+      return notifications.find(notification => Number(notification.opportunityId) === Number(item.id) && notification.reminderType === "next-step");
+    }
+    function renderNextStepStatus(item, notifications) {
+      const reminder = latestNextStepReminder(item, notifications);
+      if (!reminder) return "";
+      return `<div class="reason-row">
+        <span class="pill pill-blue">Next step reminder</span>
+        <span class="muted">AE response: ${esc(reminder.nextStepResponse || "Pending")}</span>
+        ${item.bdrNextStepConfirmation ? `<span class="muted">BDR confirmed: ${esc(item.bdrNextStepConfirmation)}</span>` : ""}
+      </div>
+      <div class="record-actions">
+        <span class="muted">Confirm next step:</span>
+        <button class="btn btn-success" onclick="confirmNextStep(${item.id}, 'Yes', event)">Yes</button>
+        <button class="btn btn-danger" onclick="confirmNextStep(${item.id}, 'No', event)">No</button>
+      </div>`;
+    }
+    function renderRecords(items, current, notifications) {
+      const activeItems = items.filter(item => !isLostOpportunity(item) && !isWonOpportunity(item) && !["s1", "s2"].includes(item.stage));
+      document.getElementById("records").innerHTML = activeItems.length ? activeItems.map(item => {
+        const [text, cls] = status(item);
+        return `<a class="record ${item.id === current.id ? "active" : ""}" href="prospect.html?id=${item.id}" target="_blank" rel="noopener">
+          <div class="record-top">
+            <div><div class="record-name">${esc(item.contact)}</div><div class="muted">${esc(item.company)}</div></div>
+            <span class="pill ${cls}">${text}</span>
+          </div>
+          <div class="muted">Current: ${esc(label(item.step))}</div>
+          <div class="muted">AE mapped: ${esc(item.ae)}</div>
+          ${item.aeDecision === "Reject" ? `<div class="reason-row"><span class="pill pill-red">Opportunity NO</span><button class="eye-btn" title="View reason" onclick="viewAeReason(${item.id}, event)">👁</button></div>` : ""}
+          ${renderNextStepStatus(item, notifications)}
+          <div class="record-actions">
+            ${item.ae === "Barnali" ? `<button class="btn btn-secondary" onclick="sendReminder(${item.id}, event)">Send reminder to AE</button>` : `<span class="muted">Reminder available for Barnali mapping</span>`}
+            <button class="btn btn-danger" onclick="deleteLead(${item.id}, event)">Delete</button>
+          </div>
+        </a>`;
+      }).join("") : `<div class="record"><div class="record-name">No active opportunities</div><div class="muted">Opportunities marked Yes or No will appear in their Flow Console sections.</div></div>`;
+    }
+    function renderStageRecord(item, current, stage) {
+      const [text, cls] = status(item);
+      return `<a class="record ${item.id === current.id ? "active" : ""}" href="prospect.html?id=${item.id}" target="_blank" rel="noopener">
+        <div class="record-top">
+          <div><div class="record-name">${esc(item.contact)}</div><div class="muted">${esc(item.company)}</div></div>
+          <span class="pill ${cls}">${text}</span>
+        </div>
+        <div class="muted">Current: ${esc(label(item.step))}</div>
+        <div class="muted">AE mapped: ${esc(item.ae)}</div>
+        <div class="record-actions">
+          <button class="btn btn-secondary" onclick="setSelfReminder(${item.id}, event)">Set reminder for myself</button>
+          ${stage === "s1" ? `<button class="btn btn-success" onclick="moveToS2(${item.id}, event)">Move to S2</button>` : ""}
+          ${stage === "s2" ? `<button class="btn btn-success" onclick="moveToDemoDone(${item.id}, event)">Move to Demo Done</button>` : ""}
+          <button class="btn btn-danger" onclick="deleteLead(${item.id}, event)">Delete</button>
+        </div>
+      </a>`;
+    }
+    function isOpportunityYes(item) {
+      const decision = String(item.aeDecision || "").toLowerCase();
+      return decision === "accept" || decision === "accepted" || decision === "yes";
+    }
+    function isWonOpportunity(item) {
+      return isOpportunityYes(item) || ["accepted", "notifyAccept", "sales", "newAe"].includes(item.step);
+    }
+    function isOpportunityNo(item) {
+      const decision = String(item.aeDecision || "").toLowerCase();
+      return decision === "reject" || decision === "rejected" || decision === "no" || Boolean(item.aeRejectionReason);
+    }
+    function isLostOpportunity(item) {
+      return isOpportunityNo(item) || ["rejected", "notifyReject", "contest", "raise", "manager", "moreInfo", "close", "contestClose"].includes(item.step);
+    }
+    function renderWonOpportunities(items) {
+      const wonItems = items.filter(isWonOpportunity);
+      document.getElementById("wonRecords").innerHTML = wonItems.length ? wonItems.map(item => {
+        const [text, cls] = status(item);
+        return `<a class="record" href="prospect.html?id=${item.id}" target="_blank" rel="noopener">
+          <div class="record-top">
+            <div><div class="record-name">${esc(item.contact)}</div><div class="muted">${esc(item.company)}</div></div>
+            <span class="pill ${cls}">${text}</span>
+          </div>
+          <div class="muted">Current: ${esc(label(item.step))}</div>
+          <div class="muted">AE mapped: ${esc(item.ae)}</div>
+          <div class="reason-row">
+            <span class="pill pill-green">Opportunity YES</span>
+          </div>
+          <div class="record-actions">
+            <button class="btn btn-danger" onclick="deleteLead(${item.id}, event)">Delete</button>
+          </div>
+        </a>`;
+      }).join("") : `<div class="record"><div class="record-name">No qualified opportunities yet</div><div class="muted">When AE marks an opportunity Yes, it will show here.</div></div>`;
+    }
+    function latestQuantest(item, quantests) {
+      return quantests
+        .filter(quantest => Number(quantest.opportunityId) === Number(item.id))
+        .sort((a, b) => new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0))[0];
+    }
+    function quantestStatusLine(item, quantests) {
+      const quantest = latestQuantest(item, quantests);
+      if (!quantest) return "";
+      const labels = {
+        "pending-bdr-manager": "Quantest pending with BDR Manager",
+        "bdr-manager-rejected": "Quantest rejected by BDR Manager",
+        "pending-ae-manager": "Quantest sent to AE Manager",
+        "ae-manager-accepted": "Quantest accepted by AE Manager",
+        "ae-manager-rejected": "Quantest rejected by AE Manager"
+      };
+      const cls = quantest.status === "ae-manager-accepted" ? "pill-green" : quantest.status && quantest.status.includes("rejected") ? "pill-red" : "pill-orange";
+      const detail = quantest.rejectionReason ? " · Reason: " + quantest.rejectionReason : quantest.reassignedAe ? " · New AE: " + quantest.reassignedAe : "";
+      return `<div class="reason-row"><span class="pill ${cls}">${esc(labels[quantest.status] || "Quantest in progress")}</span><span class="muted">${esc(detail)}</span></div>`;
+    }
+    async function requestQuantest(id, event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const items = load();
+      const record = items.find(item => Number(item.id) === Number(id));
+      if (!record) return;
+      const quantests = await loadQuantests();
+      const active = quantests.find(item => Number(item.opportunityId) === Number(id) && ["pending-bdr-manager", "pending-ae-manager"].includes(item.status));
+      if (active) {
+        alert("Quantest is already pending for " + record.contact + ".");
+        return;
+      }
+      quantests.unshift({
+        id: Date.now(),
+        opportunityId: record.id,
+        contact: record.contact,
+        company: record.company,
+        bdr: record.bdr,
+        ae: record.ae,
+        status: "pending-bdr-manager",
+        message: record.bdr + " wants to Quantest the lead " + record.contact + ".",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        readByBdrManager: false,
+        readByAeManager: false
+      });
+      record.log = record.log || [];
+      record.log.unshift(["Quantest requested", "BDR requested manager review for lost opportunity."]);
+      save(items);
+      await saveQuantests(quantests);
+      alert("Quantest request sent to BDR Manager for " + record.contact + ".");
+      render();
+    }
+    function renderLostOpportunities(items, quantests) {
+      const lostItems = items.filter(isLostOpportunity);
+      document.getElementById("lostRecords").innerHTML = lostItems.length ? lostItems.map(item => {
+        const [text, cls] = status(item);
+        return `<a class="record" href="prospect.html?id=${item.id}" target="_blank" rel="noopener">
+          <div class="record-top">
+            <div><div class="record-name">${esc(item.contact)}</div><div class="muted">${esc(item.company)}</div></div>
+            <span class="pill ${cls}">${text}</span>
+          </div>
+          <div class="muted">Current: ${esc(label(item.step))}</div>
+          <div class="muted">AE mapped: ${esc(item.ae)}</div>
+          <div class="reason-row">
+            <span class="pill pill-red">Opportunity NO</span>
+            <button class="eye-btn" title="View reason" onclick="viewAeReason(${item.id}, event)">👁</button>
+          </div>
+          ${quantestStatusLine(item, quantests)}
+          <div class="record-actions">
+            <button class="btn btn-secondary" onclick="requestQuantest(${item.id}, event)">Quantest lead</button>
+            <button class="btn btn-danger" onclick="deleteLead(${item.id}, event)">Delete</button>
+          </div>
+        </a>`;
+      }).join("") : `<div class="record"><div class="record-name">No lost opportunities yet</div><div class="muted">When AE rejects or a record is closed, it will show here.</div></div>`;
+    }
+    function renderStages(items, current) {
+      const s1Items = items.filter(item => item.stage === "s1" && !isLostOpportunity(item) && !isWonOpportunity(item));
+      const s2Items = items.filter(item => item.stage === "s2" && !isLostOpportunity(item) && !isWonOpportunity(item));
+      document.getElementById("s1Records").innerHTML = s1Items.length ? s1Items.map(item => renderStageRecord(item, current, "s1")).join("") : `<div class="record"><div class="record-name">No S1 opportunities yet</div><div class="muted">Use Add S1 Opportunity to create one.</div></div>`;
+      document.getElementById("s2Records").innerHTML = s2Items.length ? s2Items.map(item => renderStageRecord(item, current, "s2")).join("") : `<div class="record"><div class="record-name">No S2 opportunities yet</div><div class="muted">Move S1 opportunities here when ready.</div></div>`;
+    }
+    function renderDashboard(items) {
+      const lostCount = items.filter(isLostOpportunity).length;
+      const wonCount = items.filter(isWonOpportunity).length;
+      document.getElementById("totalLeads").textContent = items.length;
+      document.getElementById("activeLeads").textContent = items.length - lostCount - wonCount;
+      document.getElementById("wonLeads").textContent = wonCount;
+      document.getElementById("lostLeads").textContent = lostCount;
+
+      const grouped = items.reduce((acc, item) => {
+        const owner = item.bdr || "Unassigned";
+        acc[owner] = (acc[owner] || 0) + 1;
+        return acc;
+      }, {});
+      const rows = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
+      const max = Math.max(...rows.map(row => row[1]), 1);
+      document.getElementById("bdrLeadChart").innerHTML = rows.length ? rows.map(([owner, count]) => {
+        const width = Math.max((count / max) * 100, 8);
+        return `<div class="bar-row">
+          <div class="bar-label" title="${esc(owner)}">${esc(owner)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
+          <div class="bar-count">${count}</div>
+        </div>`;
+      }).join("") : `<div class="muted">No BDR leads available yet.</div>`;
+    }
+    function confirmNextStep(id, response, event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const items = load();
+      const record = items.find(item => Number(item.id) === Number(id));
+      if (!record) return;
+      record.bdrNextStepConfirmation = response;
+      record.bdrNextStepConfirmedAt = new Date().toISOString();
+      record.log = record.log || [];
+      record.log.unshift(["BDR confirmed next step", "Confirmation: " + response]);
+      save(items);
+      render();
+    }
+    function isDueReminder(item) {
+      return !item.scheduledFor || new Date(item.scheduledFor).getTime() <= Date.now();
+    }
+    function renderSelfReminders() {
+      const due = loadSelfReminders().filter(isDueReminder);
+      const unread = due.filter(item => !item.read).length;
+      const badge = document.getElementById("selfReminderCount");
+      badge.textContent = unread;
+      badge.classList.toggle("show", unread > 0);
+      document.getElementById("selfReminderList").innerHTML = due.length ? due.map(item => {
+        const scheduled = item.scheduledFor ? new Date(item.scheduledFor).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "numeric", minute: "2-digit" }) : "";
+        return `<div class="notif-item ${item.read ? "" : "unread"}">
+          <div class="notif-title">${esc(item.contact)} · ${esc(item.company)}</div>
+          <div class="notif-copy">${esc(item.message)}</div>
+          <div class="notif-copy">${esc(scheduled)}</div>
+        </div>`;
+      }).join("") : `<div class="notif-empty">No reminders due yet.</div>`;
+    }
+    function bdrChatThreads(chats) {
+      const visibleIds = new Set(load()
+        .filter(item => String(item.bdr || "").toLowerCase() === currentBdrName().toLowerCase())
+        .map(item => Number(item.id)));
+      return chats
+        .filter(chat => chat.chatType === bdrChatType && String(chat.bdr || "").toLowerCase() === currentBdrName().toLowerCase() && visibleIds.has(Number(chat.opportunityId)))
+        .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+    }
+    function unreadChatCount(chats) {
+      return bdrChatThreads(chats)
+        .flatMap(chat => (chat.messages || []).map(message => ({ chat, message })))
+        .filter(item => item.message.senderRole === "BDR Manager" && !item.message.readByBdr).length;
+    }
+    function renderMessages(targetId, chat) {
+      const messages = chat && chat.messages ? chat.messages : [];
+      document.getElementById(targetId).innerHTML = messages.length ? messages.map(message => {
+        const mine = message.senderRole === "BDR";
+        const when = message.createdAt ? new Date(message.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "numeric", minute: "2-digit" }) : "";
+        return `<div class="message ${mine ? "mine" : ""}">
+          <strong>${esc(message.senderName)} · ${esc(when)}</strong>
+          <p>${esc(message.text)}</p>
+        </div>`;
+      }).join("") : `<div class="empty">No chat yet for this lead.</div>`;
+    }
+    async function renderBdrChatLeadOptions() {
+      const chats = await loadChats();
+      const threads = bdrChatThreads(chats);
+      const select = document.getElementById("bdrChatLeadSelect");
+      select.innerHTML = threads.length ? threads.map(chat => `<option value="${chat.opportunityId}">${esc(chat.contact)} · ${esc(chat.company)}</option>`).join("") : `<option value="">No chats yet</option>`;
+      await renderBdrChatThread();
+    }
+    async function renderBdrChatThread() {
+      const id = Number(document.getElementById("bdrChatLeadSelect").value);
+      const chats = await loadChats();
+      const chat = chats.find(item => item.chatType === bdrChatType && Number(item.opportunityId) === id && String(item.bdr || "").toLowerCase() === currentBdrName().toLowerCase());
+      if (!chat) {
+        document.getElementById("bdrChatLog").innerHTML = `<div class="empty">No chat selected.</div>`;
+        return;
+      }
+      let changed = false;
+      (chat.messages || []).forEach(message => {
+        if (message.senderRole === "BDR Manager" && !message.readByBdr) {
+          message.readByBdr = true;
+          changed = true;
+        }
+      });
+      if (changed) await saveChats(chats);
+      renderMessages("bdrChatLog", chat);
+      const count = unreadChatCount(await loadChats());
+      document.getElementById("chatCount").textContent = count;
+      document.getElementById("chatCount").classList.toggle("show", count > 0);
+    }
+    async function openChatModal() {
+      document.getElementById("chatModal").classList.add("open");
+      await renderBdrChatLeadOptions();
+    }
+    function closeChatModal() {
+      document.getElementById("chatModal").classList.remove("open");
+      document.getElementById("bdrChatMessage").value = "";
+    }
+    function toggleSelfReminders() {
+      const menu = document.getElementById("selfReminderMenu");
+      const open = !menu.classList.contains("open");
+      menu.classList.toggle("open", open);
+      if (open) {
+        const reminders = loadSelfReminders();
+        let changed = false;
+        reminders.forEach(item => {
+          if (isDueReminder(item) && !item.read) {
+            item.read = true;
+            changed = true;
+          }
+        });
+        if (changed) saveSelfReminders(reminders);
+        render();
+        document.getElementById("selfReminderMenu").classList.add("open");
+      }
+    }
+    async function render() {
+      const items = load();
+      if (!currentId && items[0]) currentId = items[0].id;
+      const current = getCurrent();
+      const notifications = await loadNotifications();
+      const quantests = await loadQuantests();
+      renderDashboard(items);
+      renderRecords(items, current || {}, notifications);
+      renderStages(items, current || {});
+      renderWonOpportunities(items);
+      renderLostOpportunities(items, quantests);
+      renderSelfReminders();
+      const chats = await loadChats();
+      const unread = unreadChatCount(chats);
+      document.getElementById("chatCount").textContent = unread;
+      document.getElementById("chatCount").classList.toggle("show", unread > 0);
+    }
+    function selectRecord(id) { currentId = id; render(); }
+    function showSection(id) {
+      document.getElementById("dashboardPanel").classList.toggle("hidden", id !== "dashboardPanel");
+      document.getElementById("recordsPanel").classList.toggle("hidden", id !== "recordsPanel");
+      document.getElementById("s1Panel").classList.toggle("hidden", id !== "s1Panel");
+      document.getElementById("s2Panel").classList.toggle("hidden", id !== "s2Panel");
+      document.getElementById("wonPanel").classList.toggle("hidden", id !== "wonPanel");
+      document.getElementById("lostPanel").classList.toggle("hidden", id !== "lostPanel");
+      document.getElementById("navDashboard").classList.toggle("active", id === "dashboardPanel");
+      document.getElementById("navOpportunities").classList.toggle("active", id === "recordsPanel");
+      document.getElementById("navS1").classList.toggle("active", id === "s1Panel");
+      document.getElementById("navS2").classList.toggle("active", id === "s2Panel");
+      document.getElementById("navWon").classList.toggle("active", id === "wonPanel");
+      document.getElementById("navLost").classList.toggle("active", id === "lostPanel");
+    }
+    function openModal() {
+      createStage = "demo";
+      document.getElementById("form").reset();
+      document.getElementById("bdr").value = "Ranjana Priya";
+      document.getElementById("ae").value = "Barnali";
+      document.getElementById("notes").value = "Intro call completed. Awaiting Gong capture and AI processing.";
+      document.getElementById("modal").classList.add("open");
+    }
+    function openS1Modal() {
+      openModal();
+      createStage = "s1";
+      showSection("s1Panel");
+    }
+    function closeModal() { document.getElementById("modal").classList.remove("open"); }
+    document.getElementById("form").addEventListener("submit", event => {
+      event.preventDefault();
+      const items = load();
+      const record = {
+        id: Date.now(),
+        contact: document.getElementById("contact").value.trim(),
+        company: document.getElementById("company").value.trim(),
+        bdr: document.getElementById("bdr").value.trim(),
+        ae: document.getElementById("ae").value.trim(),
+        step: "intro",
+        detailsComplete: false,
+        aeDecision: "Pending",
+        notes: document.getElementById("notes").value.trim(),
+        discussionNotes: "",
+        stage: createStage,
+        log: [["Opportunity created", "BDR intro-call workflow started."]]
+      };
+      items.unshift(record);
+      save(items);
+      currentId = record.id;
+      closeModal();
+      if (createStage === "s1") showSection("s1Panel");
+      render();
+    });
+    document.getElementById("modal").addEventListener("click", event => {
+      if (event.target.id === "modal") closeModal();
+    });
+    document.getElementById("reminderForm").addEventListener("submit", createScheduledReminder);
+    document.getElementById("reminderModal").addEventListener("click", event => {
+      if (event.target.id === "reminderModal") closeReminderModal();
+    });
+    document.getElementById("chatForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      const id = Number(document.getElementById("bdrChatLeadSelect").value);
+      const text = document.getElementById("bdrChatMessage").value.trim();
+      if (!id || !text) {
+        document.getElementById("bdrChatMessage").focus();
+        return;
+      }
+      const chats = await loadChats();
+      const chat = chats.find(item => item.chatType === bdrChatType && Number(item.opportunityId) === id && String(item.bdr || "").toLowerCase() === currentBdrName().toLowerCase());
+      if (!chat) return;
+      chat.messages = chat.messages || [];
+      chat.messages.push({
+        id: Date.now(),
+        senderRole: "BDR",
+        senderName: currentBdrName(),
+        senderEmail: auth.email,
+        text,
+        createdAt: new Date().toISOString(),
+        readByBdr: true,
+        readByManager: false
+      });
+      chat.updatedAt = new Date().toISOString();
+      await saveChats(chats);
+      document.getElementById("bdrChatMessage").value = "";
+      await renderBdrChatThread();
+    });
+    window.selectRecord = selectRecord;
+    window.showSection = showSection;
+    window.openS1Modal = openS1Modal;
+    window.openModal = openModal;
+    window.closeModal = closeModal;
+    window.go = go;
+    window.runAiBundle = runAiBundle;
+    window.detailsNo = detailsNo;
+    window.detailsYes = detailsYes;
+    window.aeAccept = aeAccept;
+    window.aeReject = aeReject;
+    window.contest = contest;
+    window.manager = manager;
+    window.sendReminder = sendReminder;
+    window.setSelfReminder = setSelfReminder;
+    window.confirmNextStep = confirmNextStep;
+    window.moveToS2 = moveToS2;
+    window.moveToDemoDone = moveToDemoDone;
+    window.toggleSelfReminders = toggleSelfReminders;
+    window.openChatModal = openChatModal;
+    window.closeChatModal = closeChatModal;
+    window.renderBdrChatThread = renderBdrChatThread;
+    window.closeReminderModal = closeReminderModal;
+    window.deleteLead = deleteLead;
+    window.viewAeReason = viewAeReason;
+    window.closeReasonModal = closeReasonModal;
+    window.requestQuantest = requestQuantest;
+    window.logout = function() {
+      sessionStorage.removeItem("bdr_auth");
+      localStorage.removeItem("bdr_auth");
+      window.location.href = "index.html";
+    };
+    setInterval(render, 5000);
+    render();
+  </script>
+</body>
+</html>
